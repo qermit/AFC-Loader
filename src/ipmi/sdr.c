@@ -32,7 +32,7 @@
 #define HOT_SWAP_OPENED   0x01
 #define HOT_SWAP_QUIESCED 0x02
 
-/* Device Locator Record */
+/* Management Controller Device Locator Record 37.9 SDR Type 12h */
 unsigned char SDR0[] = {
 	0x00,	/* record number, LSB - filled by sdr_init() */
 	0x00,	/* record number, MSB - filled by sdr_init() */
@@ -41,14 +41,14 @@ unsigned char SDR0[] = {
 	0x15,	/* record length - filled by sdr_init() */
 
 	/* record key bytes */
+	0x76, // owner ID??
+	0x00,
+	0x00,
+	0x3b,
 	0x00,
 	0x00,
 	0x00,
-	0x29,
-	0x00,
-	0x00,
-	0x00,
-	0xc1,
+	0xc1,//0x60 | ((0x76-0x70) >>1), // Entry ID?
 	0x00,
 	0x00,
 	0xcc,	/* 8 bit ASCII, number of bytes */
@@ -57,7 +57,7 @@ unsigned char SDR0[] = {
 /* Hot-Swap sensor */
 unsigned char SDR1[] = {
 	/* sensor record header */
-/*1*/	0x03,			/* record number, LSB  - filled by SDR_Init()*/
+/*1*/	0x01,			/* record number, LSB  - filled by SDR_Init()*/
 	0x00,			/* record number, MSB  - filled by SDR_Init()*/
 	0x51,			/* IPMI protocol version */
 	0x01,			/* record type: full sensor */
@@ -129,7 +129,7 @@ ipmiProcessFunc ipmi_se_get_sdr_info(struct ipmi_msg *req, struct ipmi_msg* rsp)
 	} else {
 		rsp->msg_data[len++] = NUM_SDR;
 	}
-	rsp->msg_data[len++] = 0x81;
+	rsp->msg_data[len++] = 0x01; // if dynamic additional 4 bytes required (see Table 20-2 Get Device SDR INFO Command
 	rsp->msg.data_len = len;
     rsp->retcode = IPMI_CC_OK;
 }
@@ -193,7 +193,11 @@ ipmiProcessFunc ipmi_se_get_sensor_reading(struct ipmi_msg *req, struct ipmi_msg
 	int len = rsp->msg.data_len;
 
 	if (sensor_number == HOT_SWAP_SENSOR) {
-		rsp->msg_data[len++] = HOT_SWAP_OPENED;
+		rsp->msg_data[len++] = 0;
+		rsp->msg_data[len++] = 0x40;
+		rsp->msg_data[len++] = HOT_SWAP_QUIESCED;
+	} else {
+
 	}
     rsp->msg.data_len = len;
     rsp->retcode = IPMI_CC_OK;
@@ -201,4 +205,22 @@ ipmiProcessFunc ipmi_se_get_sensor_reading(struct ipmi_msg *req, struct ipmi_msg
 
 }
 
+void sdr_init(uint8_t ipmiID) {
 
+
+	unsigned char *ptrSDR;
+	unsigned char i;
+
+	for (i=0; i < NUM_SDR; i++){
+		ptrSDR = sdrPtr[i];
+		ptrSDR[4] = sdrLen[i]-5;		/* set length field in sensor */
+		if(ptrSDR[3] == 0x02 || ptrSDR[3] == 0x01)		/* full / compact sensor: fill Entity ID */
+			ptrSDR[9] = 0x60 | ((ipmiID-0x70) >>1);
+		else if(ptrSDR[3] == 0x12 || ptrSDR[3] == 0x11)				/* Device Locator record: fill Entity ID */
+			ptrSDR[13] = 0x60 | ((ipmiID-0x70) >>1);
+
+		ptrSDR[0] = i;		/* fill record ID */
+		ptrSDR[1] = 0x00;		/* MSB is allways 0 */
+		ptrSDR[5] = ipmiID;		/* Sensor Owner ID */
+	}
+}

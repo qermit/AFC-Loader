@@ -25,6 +25,7 @@
 
 ipmiProcessFunc ipmi_get_device_id(struct ipmi_msg *req, struct ipmi_msg* rsp);
 ipmiProcessFunc ipmi_picmg_get_PROPERTIES(struct ipmi_msg *req, struct ipmi_msg* rsp);
+ipmiProcessFunc ipmi_picmg_cmd_fru_control(struct ipmi_msg *req, struct ipmi_msg* rsp);
 ipmiProcessFunc ipmi_picmg_set_fru_led_state(struct ipmi_msg *req, struct ipmi_msg* rsp);
 ipmiProcessFunc ipmi_picmg_get_device_locator_record(struct ipmi_msg *req, struct ipmi_msg* rsp);
 ipmiProcessFunc ipmi_se_set_event_reciever(struct ipmi_msg *req, struct ipmi_msg* rsp);

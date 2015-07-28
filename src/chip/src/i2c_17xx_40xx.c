@@ -65,7 +65,8 @@ struct i2c_slave_interface {
 };
 
 /* I2C interfaces */
-static struct i2c_interface i2c[I2C_NUM_INTERFACE] = {
+//static
+struct i2c_interface i2c[I2C_NUM_INTERFACE] = {
 	{LPC_I2C0, SYSCTL_CLOCK_I2C0, Chip_I2C_EventHandler, NULL, NULL, NULL, 0},
 	{LPC_I2C1, SYSCTL_CLOCK_I2C1, Chip_I2C_EventHandler, NULL, NULL, NULL, 0},
 	{LPC_I2C2, SYSCTL_CLOCK_I2C2, Chip_I2C_EventHandler, NULL, NULL, NULL, 0}
@@ -197,7 +198,10 @@ int handleMasterXferState(LPC_I2C_T *pI2C, I2C_XFER_T  *xfer)
 	/* Tx handling */
 	case 0x18:		/* SLA+W sent and ACK received */
 	case 0x28:		/* DATA sent and ACK received */
-		if (!xfer->txSz) {
+		if (xfer == NULL) {
+			cclr &= ~(I2C_CON_STO);
+		}
+		else if (!xfer->txSz) {
 			cclr &= ~(xfer->rxSz ? I2C_CON_STA : I2C_CON_STO);
 		}
 		else {
@@ -234,15 +238,23 @@ int handleMasterXferState(LPC_I2C_T *pI2C, I2C_XFER_T  *xfer)
 
 	/* Bus Error */
 	case 0x00:
-		xfer->status = I2C_STATUS_BUSERR;
+		if (xfer)
+			xfer->status = I2C_STATUS_BUSERR;
 		cclr &= ~I2C_CON_STO;
 	}
 
 	/* Set clear control flags */
-	pI2C->CONSET = cclr ^ I2C_CON_FLAGS;
-	pI2C->CONCLR = cclr;
+	if (!(cclr & I2C_CON_STO)) {
+		cclr &= ~I2C_CON_AA;
+		pI2C->CONSET = cclr ^ I2C_CON_FLAGS;
+		pI2C->CONCLR = cclr;
+	} else {
+		pI2C->CONSET = cclr ^ I2C_CON_FLAGS;
+		pI2C->CONCLR = cclr;
+	}
 
 	/* If stopped return 0 */
+	if (xfer != NULL)
 	if (!(cclr & I2C_CON_STO) || (xfer->status == I2C_STATUS_ARBLOST)) {
 		if (xfer->status == I2C_STATUS_BUSY) {
 			xfer->status = I2C_STATUS_DONE;
@@ -340,6 +352,7 @@ void Chip_I2C_EventHandler(I2C_ID_T id, I2C_EVENT_T event)
 	struct i2c_interface *iic = &i2c[id];
 	volatile I2C_STATUS_T *stat;
 
+
 	/* Only WAIT event needs to be handled */
 	if (event != I2C_EVENT_WAIT) {
 		return;
@@ -349,6 +362,12 @@ void Chip_I2C_EventHandler(I2C_ID_T id, I2C_EVENT_T event)
 	/* Wait for the status to change */
 	while (*stat == I2C_STATUS_BUSY) {}
 }
+
+/*****************************************************************************
+ * Public functions
+ ****************************************************************************/
+/* Chip event handler interrupt based */
+
 
 /* Chip polling event handler */
 void Chip_I2C_EventHandlerPolling(I2C_ID_T id, I2C_EVENT_T event)
@@ -419,6 +438,40 @@ I2C_EVENTHANDLER_T Chip_I2C_GetMasterEventHandler(I2C_ID_T id)
 {
 	return i2c[id].mEvent;
 }
+
+/* Transmit and Receive data in master mode */
+int Chip_I2C_MasterTransferXfer(I2C_ID_T id, I2C_XFER_T *xfer)
+{
+	struct i2c_interface *iic = &i2c[id];
+
+	iic->mEvent(id, I2C_EVENT_LOCK);
+	xfer->status = I2C_STATUS_BUSY;
+	iic->mXfer = xfer;
+
+
+	/* If slave xfer not in progress */
+	if (!iic->sXfer) {
+		//iic->mEvent(id, I2C_EVENT_WAIT);
+		startMasterXfer(iic->ip);
+	} else {
+		iic->mXfer = 0;
+	}
+
+//	iic->mXfer = 0;
+//
+//	/* Wait for stop condition to appear on bus */
+//	while (!isI2CBusFree(iic->ip)) {}
+//
+//	/* Start slave if one is active */
+//	if (SLAVE_ACTIVE(iic)) {
+//		startSlaverXfer(iic->ip);
+//	}
+//
+//	iic->mEvent(id, I2C_EVENT_UNLOCK);
+	return (int) xfer->status;
+}
+
+
 
 /* Transmit and Receive data in master mode */
 int Chip_I2C_MasterTransfer(I2C_ID_T id, I2C_XFER_T *xfer)
@@ -494,9 +547,27 @@ int Chip_I2C_IsMasterActive(I2C_ID_T id)
 /* State change handler for master transfer */
 void Chip_I2C_MasterStateHandler(I2C_ID_T id)
 {
+	//if (i2c[id].mXfer == NULL) {
+//		asm("nop");
+//	} else
 	if (!handleMasterXferState(i2c[id].ip, i2c[id].mXfer)) {
 		i2c[id].mEvent(id, I2C_EVENT_DONE);
+		i2c[id].mXfer = NULL;
+		if (SLAVE_ACTIVE( (&i2c[id]))) {
+			//i2c[id].ip->CONSET = I2C_CON_AA;
+			//startSlaverXfer( i2c[id].ip);
+		}
 	}
+//	if (i2c[id].mXfer->status == I2C_STATUS_DONE) {
+//		if (isI2CBusFree(i2c[id].ip)) {
+//			Board_LED_Test(2);
+//			asm("nop");
+//			if (SLAVE_ACTIVE((&i2c[id]))) {
+//				startSlaverXfer(i2c[id].ip);
+//			}
+//		}
+//	}
+
 }
 
 /* Setup slave function */

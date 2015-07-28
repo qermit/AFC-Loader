@@ -2,9 +2,10 @@
 MMC bootloader for NXP lpc176x
 
 Parts of code were taken from 
-* coreIPM project
-* original AFC MMC implementation
+* coreIPM project - https://code.google.com/p/coreipm/
+* original AFC MMC implementation - https://github.com/lnls-dig/bpm-ipmi
 * DESY/CERN mmc_v2
+* University of Wisconsin MMC - https://github.com/qermit/MMC
 
 Followed directories were imported to this project
  * src/board  - lpcxpresso 1769 board files
@@ -17,12 +18,13 @@ lpcxpresso 1769 pinout description:
  - IPMI I2C SDA - P9[28] (J6-26)
 
 # Warning!!!
+
 lpcxpresso works with 12MHz oscillator, AFC/AFCK has 8MHz
 This code does not checks geographical position yet.
 This code will work only in slot 3 
 
 
-# Licencing
+# Licensing
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,3 +38,7 @@ This code will work only in slot 3
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# FRU info
+
+FRU data is generated with additional tool

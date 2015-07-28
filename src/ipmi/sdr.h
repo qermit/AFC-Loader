@@ -25,6 +25,9 @@
 
 #include "ipmb.h"
 
+void sdr_init(uint8_t ipmiID);
+
+
 ipmiProcessFunc ipmi_se_get_sdr_info(struct ipmi_msg *req, struct ipmi_msg* rsp);
 ipmiProcessFunc ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);
 ipmiProcessFunc ipmi_se_get_sensor_reading(struct ipmi_msg *req, struct ipmi_msg* rsp);

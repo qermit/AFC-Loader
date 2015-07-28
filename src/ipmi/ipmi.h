@@ -23,14 +23,23 @@
 #ifndef IPMI_H_
 #define IPMI_H_
 
+
+
 #include <stdint.h>
+//#ifdef USE_FREERTOS
+#include "FreeRTOS.h"
+//#endif
 
 //#define IPMI_MSG_ADD_DEV_SUPP	0x29	// event receiver, accept sensor cmds
-#define IPMI_MSG_ADD_DEV_SUPP	0x01	// event receiver, accept sensor cmds
+#define IPMI_MSG_ADD_DEV_SUPP	0x3B	// event receiver, accept sensor cmds
+//#define IPMI_MSG_ADD_DEV_SUPP	0x01	// event receiver, accept sensor cmds
+//#define IPMI_MSG_ADD_DEV_SUPP	0x09	// event receiver, accept sensor cmds
 #define MMC_IPMI_REL		0x51	// V1.5
 
-#define IANA_MANUFACTURER_ID	0x000060	//CERN IANA (3 bytes)
-#define PRODUCT_ID				0x1235		//Product ID (2 bytes)
+//#define IANA_MANUFACTURER_ID	0x000060	//CERN IANA (3 bytes)
+#define IANA_MANUFACTURER_ID	0x000000	//CERN IANA (3 bytes)
+//#define PRODUCT_ID				0x1235		//Product ID (2 bytes)
+#define PRODUCT_ID				0x0000		//Product ID (2 bytes)
 // firmware release
 #define MMC_FW_REL_MAJ       1                  // major release, 7 bit
 #define MMC_FW_REL_MIN       0x00                  // minor release, 8 bit
@@ -269,6 +278,7 @@
 #define IPMI_PICMG_CMD_FRU_INVENTORY_DEVICE_WRITE				0x20
 #define IPMI_PICMG_CMD_GET_SHELF_MANAGER_IP_ADDRESSES			0x21
 #define IPMI_PICMG_CMD_SHELF_POWER_ALLOCATION           		0x22
+#define IPMI_PICMG_CMD_GET_TELCO_ALARM_CAPABILITY				0x29
 
 #define IPMI_CC_OK                                              0x00
 #define IPMI_CC_NODE_BUSY                                       0xc0
@@ -515,12 +525,29 @@ typedef struct __attribute__((__packed__)) multirecord_area_header {
 
 
 void IPMI_check_req();
+void IPMI_put_event_response(struct ipmi_msg * p_ipmi_req) ;
+void vTaskIPMI( void *pvParmeters );
+
+void IPMI_init();
+
+#ifdef FREERTOS_CONFIG_H
+struct ipmi_msg * IPMI_alloc_fromISR();
+void IPMI_free_fromISR(struct ipmi_msg * msg);
+int IPMI_req_queue_append_fromISR(struct ipmi_msg * msg);
+#else
+#define IPMI_alloc_fromISR() IPMI_alloc();
+#define IPMI_free_fromISR(_msg) IPMI_free(_msg)
+#define IPMI_req_queue_append_fromISR(_msg) IPMI_req_queue_append(_msg)
+#endif
+
 
 struct ipmi_msg * IPMI_alloc();
 void IPMI_free(struct ipmi_msg * msg);
 int IPMI_req_queue_append(struct ipmi_msg * msg);
+int IPMI_event_queue_append(struct ipmi_msg * msg);
+
 void IPMI_req_queue_pushback(struct ipmi_msg * msg);
 struct ipmi_msg * IPMI_req_queue_get();
-
+TickType_t getTickDifference(TickType_t current_time, TickType_t start_time) ;
 
 #endif /* IPMI_H_ */

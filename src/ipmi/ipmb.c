@@ -26,7 +26,21 @@
 #include "ipmi.h"
 #include "board_api.h"
 
+//#ifdef USE_FREERTOS
+#warning "MMC Verion"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+//#else
+//#warning "BOOTLOADER Verion"
+//#endif
 
+//static struct ipmi_msg * current_msg
+
+#define SEND_TYPE_RESP 1
+#define SEND_TYPE_EVENT 2
+
+static int send_type = 0;
 
 // @todo: add Request/Response recognition
 int ipmb_decode(struct ipmi_msg *dst, uint8_t * buffer, int length) {
@@ -54,7 +68,13 @@ int ipmb_decode(struct ipmi_msg *dst, uint8_t * buffer, int length) {
 	// @ todo: sprawdzic
 	dst->msg.data = dst->msg_data;
 	dst->msg.data_len = length - 6;
-	int i;
+
+	int i = 0;
+	if (dst->msg.netfn & 0x01) {
+		// This is response;
+		dst->retcode =data_ptr[0];
+		data_ptr++;
+	}
 	for (i = 0 ; i<dst->msg.data_len; i++) {
 		dst->msg_data[i] = data_ptr[i];
 	}
@@ -76,6 +96,12 @@ int ipmb_encode(uint8_t * buffer, struct ipmi_msg *pmsg, int length) {
 	buffer[3] = src_addr->slave_addr;
 	buffer[4] = (0b11111100 & (pmsg->sequence << 2 )) | (0b00000011 & pmsg->msg.lun);
 	buffer[5] = pmsg->msg.cmd;
+
+	if (pmsg->msg.netfn & 0x01) {
+			// This is response;
+		*d_buffer = pmsg->retcode;
+		d_buffer++;
+	}
 
 	for (i = 0; i < pmsg->msg.data_len; i++, d_buffer++ ) {
 		*d_buffer = pmsg->msg_data[i];
@@ -109,11 +135,36 @@ static uint8_t i2c_output_buffer[32 + 1];
 
 /* Slave event handler for simulated EEPROM */
 
+//#include "board_api.h"
+//void Board_LED_Set(uint8_t LEDNumber, bool On);
+//void Board_LED_Toggle(uint8_t LEDNumber);
+//int IPMB_I2C_EventHandler_done = 0;
+
+
+extern SemaphoreHandle_t ipmi_message_sent_sid;
+
+
+void IPMB_I2C_EventHandler(I2C_ID_T id, I2C_EVENT_T event)
+{
+	static BaseType_t xHigherPriorityTaskWoken;
+	if (event == I2C_EVENT_LOCK) return;
+
+	if (event == I2C_EVENT_DONE) {
+		xHigherPriorityTaskWoken = pdFALSE;
+		xSemaphoreGiveFromISR(ipmi_message_sent_sid, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+		 //ipmi_message_sent_sid
+	}
+
+
+}
+
 static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 {
 	uint8_t * ptr;
 	int decode_result;
 	struct ipmi_msg* p_ipmi_req;
+	Board_LED_Toggle(2);
 	switch(event) {
 		case I2C_EVENT_DONE:
 			//DEBUGOUT("%x %x %d\r\n", seep_data, seep_xfer.rxBuff, seep_xfer.rxSz);
@@ -124,21 +175,25 @@ static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 			}
 			DEBUGOUT("\r\n");
 			decode_result = -1;
-			p_ipmi_req = IPMI_alloc();
+			p_ipmi_req = IPMI_alloc_fromISR();
 			if (p_ipmi_req != NULL)
 				decode_result = ipmb_decode(p_ipmi_req, seep_data, seep_xfer.rxBuff - seep_data);
+
 
 			if (decode_result == 0) {
 				if (p_ipmi_req->msg.netfn & 0x01) {
 					// handle response, not expecting any response
 					// @todo: event response handling for standard mmc code
-					IPMI_free(p_ipmi_req);
+					//IPMI_free_fromISR(p_ipmi_req);
+					IPMI_put_event_response(p_ipmi_req);
 				} else {
 					// handle request
-					if (IPMI_req_queue_append(p_ipmi_req)  != 0) {
-						IPMI_free(p_ipmi_req);
+					if (IPMI_req_queue_append_fromISR(p_ipmi_req)  != 0) {
+						IPMI_free_fromISR(p_ipmi_req);
 					}
 				}
+			} else {
+				IPMI_free_fromISR(p_ipmi_req);
 			}
 
 			//DEBUGOUT("CRC: %02x, %02x, %02x, %02x\r\n",ipmb_crc(seep_data, 3), ipmb_crc(seep_data, 2),ipmb_crc(seep_data, seep_xfer.rxBuff - seep_data ),ipmb_crc(seep_data, seep_xfer.rxBuff - seep_data -1 ));
@@ -162,6 +217,9 @@ static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 	}
 }
 
+
+
+
 /* Simulate an I2C EEPROM slave */
 void IPMB_init(I2C_ID_T id)
 {
@@ -172,18 +230,40 @@ void IPMB_init(I2C_ID_T id)
 	seep_xfer.rxBuff = &seep_data[1];
 	seep_xfer.txSz = seep_xfer.rxSz = sizeof(seep_data) - 1;
 	seep_xfer.rxSz = 32;
+
 	Chip_I2C_SlaveSetup(id, I2C_SLAVE_0, &seep_xfer, IPMB_events, 0);
+#ifdef FREERTOS_CONFIG_H
+	Chip_I2C_SetMasterEventHandler(id, IPMB_I2C_EventHandler);
+#endif
 }
 
+
+
+
+I2C_XFER_T tmp_xfer = {0};
 void IPMB_send(struct ipmi_msg * msg) {
 	int length  = ipmb_encode(i2c_output_buffer, msg, 32);
 	int i;
+
 	DEBUGOUT("IPMB out: ");
 	for (i = 0; i< length; i++) {
 		DEBUGOUT("%02x ", i2c_output_buffer[i]);
 	}
 	DEBUGOUT("\r\n");
-	Chip_I2C_MasterSend(I2C0, i2c_output_buffer[0] >> 1, &i2c_output_buffer[1], length -1);
+
+	//* todo - change to send and forget
+//	Board_LED_Set(1,1);
+
+	tmp_xfer.slaveAddr = i2c_output_buffer[0] >> 1 ;
+	tmp_xfer.txBuff = &i2c_output_buffer[1];
+	tmp_xfer.txSz = length -1;
+	tmp_xfer.rxSz = 0;
+#ifdef FREERTOS_CONFIG_H
+	Chip_I2C_MasterTransferXfer(I2C0, &tmp_xfer);
+#else
+	Chip_I2C_MasterTransfer(I2C0, &tmp_xfer);
+#endif
+//	Board_LED_Set(1,0);
 
 }
 
