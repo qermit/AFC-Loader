@@ -26,6 +26,7 @@
 								<option id="com.crt.advproject.gcc.thumb.556146106" name="Thumb mode" superClass="com.crt.advproject.gcc.thumb" value="true" valueType="boolean"/>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1863811865" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="DEBUG"/>
+									<listOptionValue builtIn="false" value="USE_FREERTOS=1"/>
 									<listOptionValue builtIn="false" value="DEBUG_ENABLE"/>
 									<listOptionValue builtIn="false" value="__CODE_RED"/>
 									<listOptionValue builtIn="false" value="CORE_M3"/>
@@ -37,8 +38,11 @@
 								<option id="gnu.c.compiler.option.misc.other.1869611290" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections" valueType="string"/>
 								<option id="com.crt.advproject.gcc.hdrlib.1013332631" name="Library headers" superClass="com.crt.advproject.gcc.hdrlib" value="Redlib" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.562906921" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/board_nxp_lpcxpresso_1769/inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/chip_lpc_175x_6x/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/board/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/chip/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/FreeRTOS/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/FreeRTOS/portable/GCC/ARM_CM3}&quot;"/>
 								</option>
 								<inputType id="com.crt.advproject.compiler.input.1963039921" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
@@ -78,6 +82,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="FreeRTOS"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
@@ -208,7 +213,7 @@
 									<listOptionValue builtIn="false" value="__REDLIB__"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.253740662" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections" valueType="string"/>
-								<option id="com.crt.advproject.gcc.hdrlib.1113240643" name="Library headers" superClass="com.crt.advproject.gcc.hdrlib" value="Redlib" valueType="enumerated"/>
+								<option id="com.crt.advproject.gcc.hdrlib.1113240643" name="Library headers" superClass="com.crt.advproject.gcc.hdrlib" value="com.crt.advproject.gcc.hdrlib.codered" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1192138200" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/board/inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/chip/inc}&quot;"/>
@@ -358,8 +363,8 @@
 	<storageModule moduleId="com.crt.config">
 		<projectStorage>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&#13;
 &lt;TargetConfig&gt;&#13;
-&lt;Properties property_0="" property_2="LPC175x_6x_512.cfx" property_3="NXP" property_4="LPC1769" property_count="5" version="70200"/&gt;&#13;
-&lt;infoList vendor="NXP"&gt;&lt;info chip="LPC1769" flash_driver="LPC175x_6x_512.cfx" match_id="0x26113F37" name="LPC1769" package="lpc17_lqfp100.xml" stub="crt_emu_cm3_nxp"&gt;&lt;chip&gt;&lt;name&gt;LPC1769&lt;/name&gt;&#13;
+&lt;Properties property_0="" property_2="LPC175x_6x_128.cfx" property_3="NXP" property_4="LPC1764" property_count="5" version="70200"/&gt;&#13;
+&lt;infoList vendor="NXP"&gt;&lt;info chip="LPC1764" flash_driver="LPC175x_6x_128.cfx" match_id="0x00011922,0x26011922" name="LPC1764" stub="crt_emu_cm3_nxp"&gt;&lt;chip&gt;&lt;name&gt;LPC1764&lt;/name&gt;&#13;
 &lt;family&gt;LPC17xx&lt;/family&gt;&#13;
 &lt;vendor&gt;NXP (formerly Philips)&lt;/vendor&gt;&#13;
 &lt;reset board="None" core="Real" sys="Real"/&gt;&#13;
@@ -367,11 +372,11 @@
 &lt;memory can_program="true" id="Flash" is_ro="true" type="Flash"/&gt;&#13;
 &lt;memory id="RAM" type="RAM"/&gt;&#13;
 &lt;memory id="Periph" is_volatile="true" type="Peripheral"/&gt;&#13;
-&lt;memoryInstance derived_from="Flash" id="MFlash512" location="0x0" size="0x80000"/&gt;&#13;
-&lt;memoryInstance derived_from="RAM" id="RamLoc32" location="0x10000000" size="0x8000"/&gt;&#13;
-&lt;memoryInstance derived_from="RAM" id="RamAHB32" location="0x2007c000" size="0x8000"/&gt;&#13;
+&lt;memoryInstance derived_from="Flash" id="MFlash128" location="0x0" size="0x20000"/&gt;&#13;
+&lt;memoryInstance derived_from="RAM" id="RamLoc16" location="0x10000000" size="0x4000"/&gt;&#13;
+&lt;memoryInstance derived_from="RAM" id="RamAHB16" location="0x2007c000" size="0x4000"/&gt;&#13;
 &lt;prog_flash blocksz="0x1000" location="0" maxprgbuff="0x1000" progwithcode="TRUE" size="0x10000"/&gt;&#13;
-&lt;prog_flash blocksz="0x8000" location="0x10000" maxprgbuff="0x1000" progwithcode="TRUE" size="0x70000"/&gt;&#13;
+&lt;prog_flash blocksz="0x8000" location="0x10000" maxprgbuff="0x1000" progwithcode="TRUE" size="0x10000"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17_NVIC" id="NVIC" location="0xE000E000"/&gt;&#13;
 &lt;peripheralInstance derived_from="TIMER" enable="SYSCTL.PCONP.PCTIM0&amp;amp;0x1" id="TIMER0" location="0x40004000"/&gt;&#13;
 &lt;peripheralInstance derived_from="TIMER" enable="SYSCTL.PCONP.PCTIM1&amp;amp;0x1" id="TIMER1" location="0x40008000"/&gt;&#13;
@@ -385,7 +390,6 @@
 &lt;peripheralInstance derived_from="FGPIO" enable="SYSCTL.PCONP.PCGPIO&amp;amp;0x1" id="GPIO4" location="0x2009C080"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17_I2S" enable="SYSCTL.PCONP&amp;amp;0x08000000" id="I2S" location="0x400A8000"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17_SYSCTL" id="SYSCTL" location="0x400FC000"/&gt;&#13;
-&lt;peripheralInstance derived_from="LPC17_DAC" enable="PCB.PINSEL1.P0_26&amp;amp;0x2=2" id="DAC" location="0x4008C000"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17xx_UART" enable="SYSCTL.PCONP.PCUART0&amp;amp;0x1" id="UART0" location="0x4000C000"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17xx_UART_MODEM" enable="SYSCTL.PCONP.PCUART1&amp;amp;0x1" id="UART1" location="0x40010000"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17xx_UART" enable="SYSCTL.PCONP.PCUART2&amp;amp;0x1" id="UART2" location="0x40098000"/&gt;&#13;
@@ -402,15 +406,13 @@
 &lt;peripheralInstance derived_from="LPC17_I2C" enable="SYSCTL.PCONP.PCI2C1&amp;amp;0x1" id="I2C1" location="0x4005C000"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17_I2C" enable="SYSCTL.PCONP.PCI2C2&amp;amp;0x1" id="I2C2" location="0x400A0000"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17_DMA" enable="SYSCTL.PCONP.PCGPDMA&amp;amp;0x1" id="DMA" location="0x50004000"/&gt;&#13;
-&lt;peripheralInstance derived_from="LPC17_ENET" enable="SYSCTL.PCONP.PCENET&amp;amp;0x1" id="ENET" location="0x50000000"/&gt;&#13;
 &lt;peripheralInstance derived_from="CM3_DCR" id="DCR" location="0xE000EDF0"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17_PCB" id="PCB" location="0x4002c000"/&gt;&#13;
-&lt;peripheralInstance derived_from="LPC17_QEI" enable="SYSCTL.PCONP.PCQEI&amp;amp;0x1" id="QEI" location="0x400bc000"/&gt;&#13;
-&lt;peripheralInstance derived_from="LPC17_USBHOST" enable="USBCLKCTL.USBClkSt&amp;amp;0x11=0x11" id="USBHOST" location="0x5000C000"/&gt;&#13;
-&lt;peripheralInstance derived_from="LPC17_USBOTG" enable="USBCLKCTL.USBClkSt&amp;amp;0x1c=0x1c" id="USBOTG" location="0x5000C000"/&gt;&#13;
+&lt;peripheralInstance derived_from="LPC17_QEI" id="QEI" location="0x400bc000"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17_RTC" enable="SYSCTL.PCONP.PCRTC&amp;amp;0x1" id="RTC" location="0x40024000"/&gt;&#13;
 &lt;peripheralInstance derived_from="MPU" id="MPU" location="0xE000ED90"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC1x_WDT" id="WDT" location="0x40000000"/&gt;&#13;
+&lt;peripheralInstance derived_from="LPC17_ENET" enable="SYSCTL.PCONP.PCENET&amp;amp;0x1" id="ENET" location="0x50000000"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17_FLASHCFG" id="FLASHACCEL" location="0x400FC000"/&gt;&#13;
 &lt;peripheralInstance derived_from="GPIO_INT" id="GPIOINTMAP" location="0x40028080"/&gt;&#13;
 &lt;peripheralInstance derived_from="LPC17_CANAFR" enable="SYSCTL.PCONP.PCCAN1&amp;amp;0x1|SYSCTL.PCONP.PCCAN2&amp;amp;0x1" id="CANAFR" location="0x4003C000"/&gt;&#13;
@@ -434,6 +436,7 @@
 		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/bootloader_lpcxpresso_1769"/>
 		</configuration>
+		<configuration configurationName="DebugBootloader"/>
 		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/bootloader_lpcxpresso_1769"/>
 		</configuration>

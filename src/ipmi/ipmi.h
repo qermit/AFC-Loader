@@ -63,6 +63,7 @@
 #define NETFN_TRANSPORT						(0x0c)
 #define NETFN_GRPEXT						(0x2c)		// group extension, for PICMG, first data byte = 0x00
 #define NETFN_CUSTOM						(0x32)		// custom extension for UWHEP MMC functions
+#define NETFN_CUSTOM_AFC					(0x30)		// custom extension for UWHEP MMC functions
 
 
 // IPMI commands

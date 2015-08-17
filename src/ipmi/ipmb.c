@@ -91,10 +91,10 @@ int ipmb_encode(uint8_t * buffer, struct ipmi_msg *pmsg, int length) {
 	struct ipmi_ipmb_addr * dst_addr = (struct ipmi_ipmb_addr *) &pmsg->daddr;
 	struct ipmi_ipmb_addr * src_addr = (struct ipmi_ipmb_addr *) &pmsg->saddr;
 	buffer[0] = dst_addr->slave_addr;
-	buffer[1] = (0b11111100 & (pmsg->msg.netfn << 2 )) | (0b00000011 & pmsg->msg.lun);
+	buffer[1] = (0b11111100 & (pmsg->msg.netfn << 2 )) | (0b00000011 & dst_addr->lun);
 	buffer[2] = ipmb_crc(buffer, 2);
 	buffer[3] = src_addr->slave_addr;
-	buffer[4] = (0b11111100 & (pmsg->sequence << 2 )) | (0b00000011 & pmsg->msg.lun);
+	buffer[4] = (0b11111100 & (pmsg->sequence << 2 )) | (0b00000011 & src_addr->lun);
 	buffer[5] = pmsg->msg.cmd;
 
 	if (pmsg->msg.netfn & 0x01) {
@@ -224,7 +224,8 @@ static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 void IPMB_init(I2C_ID_T id)
 {
 	memset(seep_data, 0xFF, I2C_SLAVE_EEPROM_SIZE);
-	seep_xfer.slaveAddr = (I2C_SLAVE_EEPROM_ADDR << 1);
+
+	seep_xfer.slaveAddr = (ipmb_get_GA());
 
 	seep_xfer.txBuff = &seep_data[1];
 	seep_xfer.rxBuff = &seep_data[1];
@@ -233,7 +234,8 @@ void IPMB_init(I2C_ID_T id)
 
 	Chip_I2C_SlaveSetup(id, I2C_SLAVE_0, &seep_xfer, IPMB_events, 0);
 #ifdef FREERTOS_CONFIG_H
-	Chip_I2C_SetMasterEventHandler(id, IPMB_I2C_EventHandler);
+	if (id == I2C0)
+		Chip_I2C_SetMasterEventHandler(id, IPMB_I2C_EventHandler);
 #endif
 }
 
@@ -265,5 +267,66 @@ void IPMB_send(struct ipmi_msg * msg) {
 #endif
 //	Board_LED_Set(1,0);
 
+}
+
+
+#define IPMBL_TABLE_SIZE 27
+
+uint8_t IPMBL_TABLE[IPMBL_TABLE_SIZE] = {
+    0x70, 0x8A, 0x72, 0x8E, 0x92, 0x90, 0x74, 0x8C, 0x76,
+    0x98, 0x9C, 0x9A, 0xA0, 0xA4, 0x88, 0x9E, 0x86, 0x84,
+    0x78, 0x94, 0x7A, 0x96, 0x82, 0x80, 0x7C, 0x7E, 0xA2 };
+
+uint8_t ipmb_get_GA( void )
+{
+    uint8_t ga0, ga1, ga2;
+    uint8_t index;
+    uint8_t i;
+    uint8_t address = IPMBL_TABLE[0];
+
+    /* Clar the test pin and read all GA pins */
+    Chip_GPIO_SetPinDIR(LPC_GPIO, GA_TEST_PORT, GA_TEST_PIN, true);
+    Chip_GPIO_SetPinState(LPC_GPIO, GA_TEST_PORT, GA_TEST_PIN, 1);
+
+    Chip_GPIO_SetPinDIR(LPC_GPIO, GA0_PORT, GA0_PIN, false);
+    Chip_GPIO_SetPinDIR(LPC_GPIO, GA1_PORT, GA1_PIN, false);
+    Chip_GPIO_SetPinDIR(LPC_GPIO, GA2_PORT, GA2_PIN, false);
+
+
+
+    ga0 = Chip_GPIO_GetPinState(LPC_GPIO, GA0_PORT, GA0_PIN);
+    ga1 = Chip_GPIO_GetPinState(LPC_GPIO, GA1_PORT, GA1_PIN);
+    ga2 = Chip_GPIO_GetPinState(LPC_GPIO, GA2_PORT, GA2_PIN);
+
+    /* Set the test pin and see if any GA pin has changed is value,
+     * meaning that it is unconnected */
+    Chip_GPIO_SetPinState(LPC_GPIO, GA_TEST_PORT, GA_TEST_PIN, 0);
+    for(i=0; i<100; i++); {asm("nop");}
+
+    if ( ga0 != Chip_GPIO_GetPinState(LPC_GPIO, GA0_PORT, GA0_PIN) )
+    {
+        ga0 = UNCONNECTED;
+    }
+
+    if ( ga1 != Chip_GPIO_GetPinState(LPC_GPIO, GA1_PORT, GA1_PIN) )
+    {
+        ga1 = UNCONNECTED;
+    }
+
+    if ( ga2 != Chip_GPIO_GetPinState(LPC_GPIO, GA2_PORT, GA2_PIN) )
+    {
+        ga2 = UNCONNECTED;
+    }
+
+    /* Transform the 3-based code in a decimal number */
+    index = (9 * ga2) + (3 * ga1) + (1 * ga0);
+
+    if ( index >= IPMBL_TABLE_SIZE )
+    {
+    	index = 0;
+    }
+
+    address = IPMBL_TABLE[index];
+    return address;
 }
 

@@ -27,6 +27,14 @@
 #include "ipmi.h"
 #include "board.h"
 
+
+/* GA pins definition */
+typedef enum {
+    GROUNDED = 0,
+    POWERED,
+    UNCONNECTED
+}GA_Pin_state;
+
 // zwraca kod bledu, jezeli 0 to poszlo wszhystko ok
 int ipmb_decode(struct ipmi_msg *dst, uint8_t * buffer, int length);
 // Zwraca dlugosc bajtow
@@ -41,5 +49,8 @@ void IPMB_init(I2C_ID_T id);
 
 
 void IPMB_send(struct ipmi_msg * msg);
+
+uint8_t ipmb_get_GA( void );
+
 
 #endif /* IPMB_H_ */

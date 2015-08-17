@@ -27,6 +27,75 @@
 
 void sdr_init(uint8_t ipmiID);
 
+typedef struct {
+  uint8_t recID_LSB;
+  uint8_t recID_MSB;
+  uint8_t SDRversion;
+  uint8_t rectype;
+  uint8_t reclength;
+} SDR_entry_hdr_t;
+
+typedef struct {
+  SDR_entry_hdr_t hdr;
+  uint8_t ownerID;                                                              // 6
+  uint8_t ownerLUN;                                                             // 7
+  uint8_t sensornum;                                                    // 8
+  uint8_t entityID;                                                             // 9
+  uint8_t entityinstance;                                               // 10
+  uint8_t sensorinit;                                                   // 11
+  uint8_t sensorcap;                                                    // 12
+  uint8_t sensortype;                                                   // 13
+  uint8_t event_reading_type;                                   // 14
+  uint8_t assertion_event_mask[2];              // 15-16 <- to jest zmieniane
+  uint8_t deassertion_event_mask[2];            // 17-18 <- to jest zmieniane
+  uint8_t readable_threshold_mask;              // 19
+  uint8_t settable_threshold_mask;              // 20
+  uint8_t sensor_units_1;                                               // 21
+  uint8_t sensor_units_2;                                               // 22
+  uint8_t sensor_units_3;                                               // 23
+  uint8_t linearization;                                                // 24
+  uint8_t M;                                                                    // 25
+  uint8_t M_tol;                                                                // 26
+  uint8_t B;                                                                    // 27
+  uint8_t B_accuracy;                                                   // 28
+  uint8_t acc_exp_sensor_dir;                                   // 29
+  uint8_t Rexp_Bexp;                                                    // 30
+  uint8_t analog_flags;                                                 // 31
+  uint8_t nominal_reading;                                              // 32
+  uint8_t normal_max;                                                   // 33
+  uint8_t normal_min;                                                   // 34
+  uint8_t sensor_max_reading;                                   // 35
+  uint8_t sensor_min_reading;                                   // 36
+  uint8_t upper_nonrecover_thr;                                 // 37
+  uint8_t upper_critical_thr;                                   // 38
+  uint8_t upper_noncritical_thr;                                // 39
+  uint8_t lower_nonrecover_thr;                                 // 40
+  uint8_t lower_critical_thr;                                   // 41
+  uint8_t lower_noncritical_thr;                                // 42
+  uint8_t pos_thr_hysteresis;                                   // 43
+  uint8_t neg_thr_hysteresis;                                   // 44
+  uint8_t reserved1;                                                    // 45
+  uint8_t reserved2;                                                    // 46
+  uint8_t OEM;                                                                  // 47
+  uint8_t IDtypelen;                                                    // 48
+  char IDstring[16];                                                    // 49-64 (0x40 length max)
+} SDR_type_01h_t;
+
+
+typedef struct {
+  SDR_entry_hdr_t hdr;
+  uint8_t slaveaddr;
+  uint8_t chnum;
+  uint8_t power_notification_global_init;
+  uint8_t device_cap;
+  uint8_t reserved[3];
+  uint8_t entityID;
+  uint8_t entityinstance;
+  uint8_t OEM;
+  uint8_t IDtypelen;
+  char IDstring[16];
+} SDR_type_12h_t;
+
 
 ipmiProcessFunc ipmi_se_get_sdr_info(struct ipmi_msg *req, struct ipmi_msg* rsp);
 ipmiProcessFunc ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);

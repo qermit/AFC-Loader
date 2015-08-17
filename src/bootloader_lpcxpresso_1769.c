@@ -42,11 +42,22 @@
 #include "ipmi/ipmb.h"
 #include "ipmi/sdr.h"
 #include "ipmi/ipmi_handlers.h"
+#include "ipmi/ipmi_oem.h"
+
+
+//#ifndef USE_FREERTOS
+//#define USE_FREERTOS
+//#else DUPA
+//test
+//#endif
+
+
 
 #ifdef USE_FREERTOS
 #warning "MMC Verion"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "semphr.h"
 #else
 #warning "BOOTLOADER Verion"
 #endif
@@ -63,6 +74,9 @@ static int mode_poll;   /* Poll/Interrupt mode flag */
 #define DELAY_PERIOD 1000
 
 #ifdef FREERTOS_CONFIG_H
+
+extern struct I2C_Mutex i2c_mutex_array[2];
+
 
 void LEDTask( void *pvParmeters )
 {
@@ -87,13 +101,22 @@ TickType_t xLastWakeTime;
 /* Set I2C mode to polling/interrupt */
 static void i2c_set_mode(I2C_ID_T id, int polling)
 {
+	IRQn_Type irq_type = I2C0_IRQn;
+	switch (id) {
+		case I2C0: irq_type = I2C0_IRQn; break ;
+		case I2C1: irq_type = I2C1_IRQn; break ;
+		case I2C2: irq_type = I2C2_IRQn; break ;
+		default: return;
+
+	}
+
 	if(!polling) {
 		mode_poll &= ~(1 << id);
 		Chip_I2C_SetMasterEventHandler(id, Chip_I2C_EventHandler);
-		NVIC_EnableIRQ(id == I2C0 ? I2C0_IRQn : I2C1_IRQn);
+		NVIC_EnableIRQ(irq_type);
 	} else {
 		mode_poll |= 1 << id;
-		NVIC_DisableIRQ(id == I2C0 ? I2C0_IRQn : I2C1_IRQn);
+		NVIC_DisableIRQ(irq_type);
 		Chip_I2C_SetMasterEventHandler(id, Chip_I2C_EventHandlerPolling);
 	}
 }
@@ -114,7 +137,7 @@ static void i2c_app_init(I2C_ID_T id, int speed, int pooling)
 static void i2c_state_handling(I2C_ID_T id)
 {
 	if (Chip_I2C_IsMasterActive(id)) {
-		Board_LED_Toggle(1);
+		//Board_LED_Toggle(1);
 
 		Chip_I2C_MasterStateHandler(id);
 	} else {
@@ -133,6 +156,19 @@ void I2C0_IRQHandler(void)
 //	portYIELD();
 }
 
+void I2C1_IRQHandler(void)
+{
+	i2c_state_handling(I2C1);
+//	portYIELD();
+}
+
+
+void I2C2_IRQHandler(void)
+{
+	i2c_state_handling(I2C2);
+//	portYIELD();
+}
+
 //static void delay(  ) {
 //uint16_t i = 0;
 //uint8_t z = 0;
@@ -147,6 +183,125 @@ void I2C0_IRQHandler(void)
 //
 //}
 
+#define GPIO_EN_P1V2_PORT       0
+#define GPIO_EN_P1V2_PIN       23
+#define GPIO_EN_P1V8_PORT       0
+#define GPIO_EN_P1V8_PIN       24
+
+#define GPIO_EM_FMC1_P12V_PORT  0
+#define GPIO_EM_FMC1_P12V_PIN   4
+#define GPIO_EN_FMC1_P3V3_PORT  0
+#define GPIO_EN_FMC1_P3V3_PIN  25
+#define GPIO_EN_FMC1_PVADJ_PORT 1
+#define GPIO_EN_FMC1_PVADJ_PIN  31
+
+#define GPIO_EM_FMC2_P12V_PORT  0
+#define GPIO_EM_FMC2_P12V_PIN   5
+#define GPIO_EN_FMC2_P3V3_PORT  0
+#define GPIO_EN_FMC2_P3V3_PIN  26
+#define GPIO_EN_FMC2_PVADJ_PORT 1
+#define GPIO_EN_FMC2_PVADJ_PIN 28
+
+
+#define GPIO_EN_P3V3_PORT       1
+#define GPIO_EN_P3V3_PIN       27
+#define GPIO_EN_1V5_VTT_PORT    1
+#define GPIO_EN_1V5_VTT_PIN    29
+#define GPIO_EN_P1V0_PORT       3
+#define GPIO_EN_P1V0_PIN       25
+
+static void delay(  ) {
+uint16_t i = 0;
+uint8_t z = 0;
+
+	for(i=0; i<20000; i++)
+	{
+		for(z=0; z<100; z++)
+		{
+
+		}
+	}
+
+}
+
+void reset_FPGA(void)
+{
+	Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, true);
+	Chip_GPIO_SetPinState(LPC_GPIO, 0, 6, false );
+	delay(  );
+	Chip_GPIO_SetPinState(LPC_GPIO, 0, 6, true );
+	Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, false);
+}
+
+void setDC_DC_ConvertersON(bool on) {
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P1V2_PORT, GPIO_EN_P1V2_PIN, on);
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P1V8_PORT, GPIO_EN_P1V8_PIN, on);
+
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC2_P3V3_PORT, GPIO_EN_FMC2_P3V3_PIN, on);
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC2_PVADJ_PORT, GPIO_EN_FMC2_PVADJ_PIN, on);
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EM_FMC2_P12V_PORT, GPIO_EM_FMC2_P12V_PIN, on);
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EM_FMC1_P12V_PORT, GPIO_EM_FMC1_P12V_PIN, on);
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC1_P3V3_PORT, GPIO_EN_FMC1_P3V3_PIN, on);
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC1_PVADJ_PORT,	GPIO_EN_FMC1_PVADJ_PIN, on);
+
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P3V3_PORT, GPIO_EN_P3V3_PIN, on);
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_1V5_VTT_PORT, GPIO_EN_1V5_VTT_PIN, on);
+	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P1V0_PORT, GPIO_EN_P1V0_PIN, on);
+
+
+
+
+}
+void initializeDCDC() {
+	setDC_DC_ConvertersON(false);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V2_PORT, GPIO_EN_P1V2_PIN, true);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V8_PORT, GPIO_EN_P1V8_PIN, true);
+
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_FMC2_P3V3_PORT, GPIO_EN_FMC2_P3V3_PIN, true);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_FMC2_PVADJ_PORT, GPIO_EN_FMC1_PVADJ_PIN, true);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EM_FMC2_P12V_PORT, GPIO_EM_FMC1_P12V_PIN, true);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EM_FMC1_P12V_PORT, GPIO_EM_FMC1_P12V_PIN, true);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_FMC1_P3V3_PORT, GPIO_EN_FMC1_P3V3_PIN, true);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_FMC1_PVADJ_PORT,	GPIO_EN_FMC1_PVADJ_PIN, true);
+
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P3V3_PORT, GPIO_EN_P3V3_PIN, true);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_1V5_VTT_PORT, GPIO_EN_1V5_VTT_PIN, true);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V0_PORT, GPIO_EN_P1V0_PIN, true);
+}
+
+
+#define INA220_BUS_REG 0x02
+
+static void INA222_init(I2C_ID_T i2c)
+{
+	uint8_t ch[3];
+	ch[0] = 0 ; // INA220_CFG_REG
+	ch[1] = 0x01;
+	ch[2] = 0x9f;
+	Chip_I2C_MasterSend(i2c, 0x40, ch, 3);
+}
+
+static uint16_t INA222_readVolt(I2C_ID_T i2c)
+{
+	uint8_t ch[2];
+	Chip_I2C_MasterCmdRead(i2c, 0x40, INA220_BUS_REG, ch, 2 );
+
+	  //float retVal = 0.0;
+
+	  uint16_t tmpVal = 0.0;
+
+	  //bus volt
+	  tmpVal = ( 0x1fE0 & (ch[0]<< 5) ) | (  0x1f & (ch[1] >> 3) );
+	  tmpVal = tmpVal * 4;
+	  //tmpVal = (tmpVal >> 3);
+
+	  //retVal = (float)(  tmpVal*0.004 );
+//	DEBUGOUT("%02X %02x => %d\r\n", ch[0],ch[1], tmpVal);
+	return tmpVal;
+
+}
+
+
 int main(void) {
 	__disable_irq();
 #if defined (__USE_LPCOPEN)
@@ -156,10 +311,12 @@ int main(void) {
     // Set up and initialize all required blocks and
     // functions related to the board hardware
     Board_Init();
-    // Set the LED to the state of "On"
-    Board_LED_Set(0, true);
-    Board_LED_Set(1, false);
-    Board_LED_Set(2, false);
+
+    Board_LED_Set(1, true);
+    initializeDCDC();
+   // setDC_DC_ConvertersON(true);
+   // reset_FPGA();
+  //  setDC_DC_ConvertersON(false);
 
 #endif
 #endif
@@ -176,45 +333,38 @@ int main(void) {
 #ifdef FREERTOS_CONFIG_H
     __enable_irq();
 	i2c_app_init(I2C0, SPEED_100KHZ, I2CMODE_INTERRUPT);
+
+	i2c_mutex_array[0].semaphore = xSemaphoreCreateBinary();
+	xSemaphoreGive(i2c_mutex_array[0].semaphore);
+	i2c_mutex_array[0].i2c_bus = I2C1;
+	i2c_app_init(I2C1, SPEED_100KHZ, I2CMODE_INTERRUPT);
+
+	i2c_mutex_array[1].semaphore = xSemaphoreCreateBinary();
+	xSemaphoreGive(i2c_mutex_array[1].semaphore);
+	i2c_mutex_array[1].i2c_bus = I2C2;
+	i2c_app_init(I2C2, SPEED_100KHZ, I2CMODE_INTERRUPT);
 #else
     i2c_app_init(I2C0, SPEED_100KHZ, I2CMODE_POOLING);
 #endif
-    //i2c_probe_slaves(I2C0);
+
+
+//    INA222_init(I2C1);
+//    if (INA222_readVolt(I2C1) > 12000) {
+//    	setDC_DC_ConvertersON(true);
+//    } else {
+//    // reset_FPGA();
+//       setDC_DC_ConvertersON(false);
+//    }
+
+
+    Chip_GPIO_SetPinState(LPC_GPIO, 1, 22, false);
+	Chip_GPIO_SetPinDIR(LPC_GPIO, 1, 22, true);
+	//asm("nop");
+	Chip_GPIO_SetPinState(LPC_GPIO, 1, 22, true);
+
+
     IPMB_init(I2C0);
     DEBUGOUT("\r\nStart MMC\r\n");
-
-//    struct ipmi_msg *pmsg = IPMI_alloc();
-//    struct ipmi_ipmb_addr *dst_addr = &pmsg->daddr;
-//    struct ipmi_ipmb_addr *src_addr = &pmsg->saddr;
-//    src_addr->lun = 0;
-//    src_addr->slave_addr = 0x76;
-//    dst_addr->lun = 0;
-//    dst_addr->slave_addr = 0x20;
-//    pmsg->msg.lun = 0;
-//    pmsg->msg.netfn = NETFN_SE;
-//    pmsg->msg.cmd = IPMI_PLATFORM_EVENT_CMD;
-//    int data_len = 0;
-//    pmsg->msg_data[data_len++] = 0x04;
-//    pmsg->msg_data[data_len++] = 0xf2;
-//    pmsg->msg_data[data_len++] = 0;
-//    pmsg->msg_data[data_len++] = 0x6f;
-//    pmsg->msg_data[data_len++] = 0x00; // hot swap state
-//    pmsg->msg.data_len = data_len;
-////
-////    Board_LED_Set(2,1);
-////    Board_LED_Toggle(1);
-//    IPMB_send(pmsg);
-//    test_var = 2;
-//	Board_LED_Set(2,0);
-//    delay();
-//    Board_LED_Set(2,1);
-//    test_var = 3;
-//    Board_LED_Toggle(1);
-//    IPMB_send(pmsg);
-//    Board_LED_Set(2,0);
-//    test_var = 4;
-//
-//    IPMI_free(pmsg);
 
 
 #ifdef FREERTOS_CONFIG_H
@@ -228,7 +378,6 @@ int main(void) {
          {
     	//     vTaskDelete( xIPMIHandle );
          }
-
     vTaskStartScheduler();
 #else
     while(1) {

@@ -185,7 +185,7 @@ STATIC I2C_SLAVE_ID lookupSlaveIndex(LPC_I2C_T *pI2C, uint8_t slaveAddr)
 }
 
 /* Master transfer state change handler handler */
-int handleMasterXferState(LPC_I2C_T *pI2C, I2C_XFER_T  *xfer)
+int handleMasterXferState(LPC_I2C_T *pI2C, I2C_XFER_T  *xfer, char slave_active)
 {
 	uint32_t cclr = I2C_CON_FLAGS;
 
@@ -245,7 +245,9 @@ int handleMasterXferState(LPC_I2C_T *pI2C, I2C_XFER_T  *xfer)
 
 	/* Set clear control flags */
 	if (!(cclr & I2C_CON_STO)) {
-		cclr &= ~I2C_CON_AA;
+		if (slave_active != 0) {
+			cclr &= ~I2C_CON_AA;
+		}
 		pI2C->CONSET = cclr ^ I2C_CON_FLAGS;
 		pI2C->CONCLR = cclr;
 	} else {
@@ -550,7 +552,7 @@ void Chip_I2C_MasterStateHandler(I2C_ID_T id)
 	//if (i2c[id].mXfer == NULL) {
 //		asm("nop");
 //	} else
-	if (!handleMasterXferState(i2c[id].ip, i2c[id].mXfer)) {
+	if (!handleMasterXferState(i2c[id].ip, i2c[id].mXfer, SLAVE_ACTIVE( (&i2c[id])))) {
 		i2c[id].mEvent(id, I2C_EVENT_DONE);
 		i2c[id].mXfer = NULL;
 		if (SLAVE_ACTIVE( (&i2c[id]))) {
@@ -623,6 +625,11 @@ void Chip_I2C_SlaveStateHandler(I2C_ID_T id)
 void Chip_I2C_Disable(I2C_ID_T id)
 {
 	LPC_I2Cx(id)->CONCLR = I2C_I2CONCLR_I2ENC;
+}
+
+void Chip_I2C_Enable(I2C_ID_T id)
+{
+	LPC_I2Cx(id)->CONSET = I2C_I2CONSET_I2EN;
 }
 
 /* State change checking */

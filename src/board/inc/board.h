@@ -88,6 +88,24 @@ extern "C" {
 #define LEDS_LED4           0x08
 #define LEDS_NO_LEDS        0x00
 
+
+#define LED0_GPIO_PORT_NUM      1
+#define LED0_GPIO_BIT_NUM       9
+#define LED1_GPIO_PORT_NUM      1
+#define LED1_GPIO_BIT_NUM      10
+#define LED2_GPIO_PORT_NUM      1
+#define LED2_GPIO_BIT_NUM      25
+
+#define GA_TEST_PORT  1
+#define GA0_PORT      1
+#define GA1_PORT      1
+#define GA2_PORT      1
+
+#define GA_TEST_PIN  8
+#define GA0_PIN      0
+#define GA1_PIN      1
+#define GA2_PIN      4
+
 /**
  * Button defines
  */

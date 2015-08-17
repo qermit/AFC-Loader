@@ -49,12 +49,7 @@
 #define JOYSTICK_RIGHT_GPIO_BIT_NUM             16
 #define JOYSTICK_PRESS_GPIO_PORT_NUM            0
 #define JOYSTICK_PRESS_GPIO_BIT_NUM             17
-#define LED0_GPIO_PORT_NUM                      0
-#define LED0_GPIO_BIT_NUM                       22
-#define LED1_GPIO_PORT_NUM                      1
-#define LED1_GPIO_BIT_NUM                       18
-#define LED2_GPIO_PORT_NUM                      1
-#define LED2_GPIO_BIT_NUM                       19
+
 
 
 
@@ -63,8 +58,8 @@
  ****************************************************************************/
 
 /* System oscillator rate and RTC oscillator rate */
-const uint32_t OscRateIn = 12000000;
-//static uint32_t OscRateIn = 8000000;
+//const uint32_t OscRateIn = 12000000;
+const uint32_t OscRateIn = 8000000;
 
 const uint32_t RTCOscRateIn = 32768;
 
@@ -77,6 +72,9 @@ static void Board_LED_Init(void)
 {
 	/* Pin PIO0_22 is configured as GPIO pin during SystemInit */
 	/* Set the PIO_22 as output */
+	Board_LED_Set(0, false);
+	Board_LED_Set(1, false);
+	Board_LED_Set(2, false);
 	Chip_GPIO_WriteDirBit(LPC_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM, true);
 	Chip_GPIO_WriteDirBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM, true);
 	Chip_GPIO_WriteDirBit(LPC_GPIO, LED2_GPIO_PORT_NUM, LED2_GPIO_BIT_NUM, true);
@@ -142,12 +140,12 @@ void Board_LED_Set(uint8_t LEDNumber, bool On)
 {
 	/* There is only one LED */
 	if (LEDNumber == 0) {
-		Chip_GPIO_WritePortBit(LPC_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM, On);
+		Chip_GPIO_WritePortBit(LPC_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM, !On);
 	} else if (LEDNumber == 1) {
-		Chip_GPIO_WritePortBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM, On);
+		Chip_GPIO_WritePortBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM, !On);
 	}
 	else if (LEDNumber == 2) {
-		Chip_GPIO_WritePortBit(LPC_GPIO, LED2_GPIO_PORT_NUM, LED2_GPIO_BIT_NUM, On);
+		Chip_GPIO_WritePortBit(LPC_GPIO, LED2_GPIO_PORT_NUM, LED2_GPIO_BIT_NUM, !On);
 	}
 }
 
@@ -157,11 +155,11 @@ bool Board_LED_Test(uint8_t LEDNumber)
 	bool state = false;
 
 	if (LEDNumber == 0) {
-		state = Chip_GPIO_ReadPortBit(LPC_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM);
+		state = ! Chip_GPIO_ReadPortBit(LPC_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM);
 	} else if (LEDNumber == 1) {
-		state = Chip_GPIO_ReadPortBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM);
+		state = ! Chip_GPIO_ReadPortBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM);
 	} else if (LEDNumber == 2) {
-		state = Chip_GPIO_ReadPortBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED2_GPIO_BIT_NUM);
+		state = ! Chip_GPIO_ReadPortBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED2_GPIO_BIT_NUM);
 	}
 
 	return state;
@@ -291,10 +289,16 @@ void Board_I2C_Init(I2C_ID_T id)
 		break;
 
 	case I2C1:
-		Chip_IOCON_PinMux(LPC_IOCON, 0, 19, IOCON_MODE_INACT, IOCON_FUNC2);
-		Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC2);
+		//Chip_IOCON_PinMux(LPC_IOCON, 0,  0, IOCON_MODE_INACT, IOCON_FUNC3);
+		//Chip_IOCON_PinMux(LPC_IOCON, 0,  1, IOCON_MODE_INACT, IOCON_FUNC3);
+		//Chip_IOCON_EnableOD(LPC_IOCON, 0,  0);
+		//Chip_IOCON_EnableOD(LPC_IOCON, 0,  1);
+
+		Chip_IOCON_PinMux(LPC_IOCON, 0, 19, IOCON_MODE_INACT, IOCON_FUNC3);
+		Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC3);
 		Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
 		Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
+
 		break;
 
 	case I2C2:
@@ -380,11 +384,11 @@ void Board_USBD_Init(uint32_t port)
 {
 	/* VBUS is not connected on the NXP LPCXpresso LPC1769, so leave the pin at default setting. */
 	/*Chip_IOCON_PinMux(LPC_IOCON, 1, 30, IOCON_MODE_INACT, IOCON_FUNC2);*/ /* USB VBUS */
-	
+
 	Chip_IOCON_PinMux(LPC_IOCON, 0, 29, IOCON_MODE_INACT, IOCON_FUNC1);	/* P0.29 D1+, P0.30 D1- */
 	Chip_IOCON_PinMux(LPC_IOCON, 0, 30, IOCON_MODE_INACT, IOCON_FUNC1);
 
 	LPC_USB->USBClkCtrl = 0x12;                /* Dev, AHB clock enable */
-	while ((LPC_USB->USBClkSt & 0x12) != 0x12); 
+	while ((LPC_USB->USBClkSt & 0x12) != 0x12);
 }
 

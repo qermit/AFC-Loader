@@ -21,6 +21,7 @@
 
 #include "ipmi.h"
 #include "ipmi_handlers.h"
+#include "ipmi_oem.h"
 #include "sdr.h"
 #include <string.h>
 
@@ -47,6 +48,7 @@ static const ipmiFuncEntry_t const ipmiEntries[] = {
 		{ NETFN_SE,      IPMI_RESERVE_DEVICE_SDR_REPOSITORY_CMD, ipmi_se_reserve_device_sdr},
 		{ NETFN_STORAGE, IPMI_GET_FRU_INVENTORY_AREA_INFO_CMD, ipmi_storage_get_fru_info},
 		{ NETFN_STORAGE, IPMI_READ_FRU_DATA_CMD, ipmi_storage_read_fru_data_cmd},
+		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_I2C_TRANSFER, ipmi_afc_i2c_transfer},
 		{ 0, 0, NULL }
 };
 
@@ -315,6 +317,9 @@ void IPMI_check_req() {
 	struct ipmi_msg * p_ipmi_req_next1 = NULL;
 	struct ipmi_msg * p_ipmi_req_next2 ;
 	struct ipmi_msg * p_ipmi_resp ;
+
+	struct ipmi_ipmb_addr * tmp_dst;
+	struct ipmi_ipmb_addr * tmp_src;
 #ifdef FREERTOS_CONFIG_H
 	p_ipmi_req = IPMI_req_queue_get( 0 );
 #else
@@ -334,6 +339,7 @@ void IPMI_check_req() {
 
 	p_ipmi_resp->msg.data_len = 0;
 
+
 	ipmiFuncEntry_t * p_ptr = (ipmiFuncEntry_t *) ipmiEntries;
 	while (p_ptr->process != NULL) {
 	    	//DEBUGOUT("Function: %d:%d => %x\r\n", p_ptr->netfn, p_ptr->cmd, p_ptr->process);
@@ -346,6 +352,10 @@ void IPMI_check_req() {
 		ipmi_general_invalid(p_ipmi_req, p_ipmi_resp);
 		//p_ipmi_resp->retcode = IPMI_CC_INV_CMD;
 	} else {
+		tmp_src = & p_ipmi_req->saddr;
+		//tmp_src->lun = 0;
+		tmp_dst = & p_ipmi_req->daddr;
+
 		p_ptr->process(p_ipmi_req, p_ipmi_resp);
 
 	}
