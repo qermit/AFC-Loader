@@ -26,9 +26,9 @@
 
 
 #include <stdint.h>
-//#ifdef USE_FREERTOS
+#if USE_FREERTOS == 1
 #include "FreeRTOS.h"
-//#endif
+#endif
 
 //#define IPMI_MSG_ADD_DEV_SUPP	0x29	// event receiver, accept sensor cmds
 #define IPMI_MSG_ADD_DEV_SUPP	0x3B	// event receiver, accept sensor cmds

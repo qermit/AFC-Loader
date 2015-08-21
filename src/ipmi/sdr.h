@@ -25,6 +25,34 @@
 
 #include "ipmb.h"
 
+#define GPIO_EN_P1V2_PORT       0
+#define GPIO_EN_P1V2_PIN       23
+#define GPIO_EN_P1V8_PORT       0
+#define GPIO_EN_P1V8_PIN       24
+
+#define GPIO_EM_FMC1_P12V_PORT  0
+#define GPIO_EM_FMC1_P12V_PIN   4
+#define GPIO_EN_FMC1_P3V3_PORT  0
+#define GPIO_EN_FMC1_P3V3_PIN  25
+#define GPIO_EN_FMC1_PVADJ_PORT 1
+#define GPIO_EN_FMC1_PVADJ_PIN  31
+
+#define GPIO_EM_FMC2_P12V_PORT  0
+#define GPIO_EM_FMC2_P12V_PIN   5
+#define GPIO_EN_FMC2_P3V3_PORT  0
+#define GPIO_EN_FMC2_P3V3_PIN  26
+#define GPIO_EN_FMC2_PVADJ_PORT 1
+#define GPIO_EN_FMC2_PVADJ_PIN 28
+
+
+#define GPIO_EN_P3V3_PORT       1
+#define GPIO_EN_P3V3_PIN       27
+#define GPIO_EN_1V5_VTT_PORT    1
+#define GPIO_EN_1V5_VTT_PIN    29
+#define GPIO_EN_P1V0_PORT       3
+#define GPIO_EN_P1V0_PIN       25
+
+
 void sdr_init(uint8_t ipmiID);
 
 typedef struct {
@@ -84,6 +112,37 @@ typedef struct {
 
 typedef struct {
   SDR_entry_hdr_t hdr;
+  // RECORD KEY BYTES
+  uint8_t ownerID;                                                              // 6
+  uint8_t ownerLUN;                                                             // 7
+  uint8_t sensornum;                                                    // 8
+  // record body bytes
+  uint8_t entityID;                                                             // 9
+  uint8_t entityinstance;                                               // 10
+  uint8_t sensorinit;                                                   // 11
+  uint8_t sensorcap;                                                    // 12
+  uint8_t sensortype;                                                   // 13
+  uint8_t event_reading_type;                                   // 14
+  uint8_t assertion_event_mask[2];              // 15-16 <- to jest zmieniane
+  uint8_t deassertion_event_mask[2];            // 17-18 <- to jest zmieniane
+  uint8_t readable_threshold_mask;              // 19
+  uint8_t settable_threshold_mask;              // 20
+  uint8_t sensor_units_1;                                               // 21
+  uint8_t sensor_units_2;                                               // 22
+  uint8_t sensor_units_3;                                               // 23
+  uint8_t record_sharing[2];                                                // 24-25
+  uint8_t pos_thr_hysteresis;                                               // 25
+  uint8_t neg_thr_hysteresis;                                               // 26
+  uint8_t reserved1;                                                                    // 27
+  uint8_t reserved2;                                                   // 28
+  uint8_t reserved3;                                   // 29
+  uint8_t OEM;                                                    // 30
+  uint8_t IDtypelen;                                                    // 31
+  char IDstring[16];                                                    // 32-64 (0x40 length max)
+} SDR_type_02h_t;
+
+typedef struct {
+  SDR_entry_hdr_t hdr;
   uint8_t slaveaddr;
   uint8_t chnum;
   uint8_t power_notification_global_init;
@@ -97,13 +156,41 @@ typedef struct {
 } SDR_type_12h_t;
 
 
-ipmiProcessFunc ipmi_se_get_sdr_info(struct ipmi_msg *req, struct ipmi_msg* rsp);
-ipmiProcessFunc ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);
-ipmiProcessFunc ipmi_se_get_sensor_reading(struct ipmi_msg *req, struct ipmi_msg* rsp);
+typedef struct {
+  uint8_t ownerID;
+  uint8_t entityID;
+
+  uint8_t readout_value;
+  uint8_t comparator_status;
+
+  /*uint8_t event_msg_ctl;
+
+  uint16_t cur_masked_comp;
+  uint16_t prev_masked_comp;
+
+  uint8_t comparator_status;              // for IPMI comparator readout for get sensor reading command
+  uint8_t readout_value;
+
+  pGetReadoutVal readout_function;
+  uint8_t readout_func_arg;
+
+  uint8_t active_context_code;            // context code for when sensor is active*/
+
+} sensor_data_entry_t;
+
+void ipmi_se_get_sdr_info(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_se_get_sensor_reading(struct ipmi_msg *req, struct ipmi_msg* rsp);
 
 
 
-ipmiProcessFunc ipmi_se_reserve_device_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_se_reserve_device_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);
 
+void initializeDCDC();
+
+void do_quiesced_init();
+
+void do_quiesced(unsigned char ctlcode);
+void vTaskSensor( void *pvParmeters );
 
 #endif /* IPMI_SDR_H_ */

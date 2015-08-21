@@ -45,7 +45,7 @@ int ipmb_encode(uint8_t * buffer, struct ipmi_msg *dst, int length);
 // moze byc uzyta do tworzenia sumy kontrolnej
 uint8_t ipmb_crc(uint8_t *buffer, int length);
 
-void IPMB_init(I2C_ID_T id);
+unsigned char IPMB_init(I2C_ID_T id);
 
 
 void IPMB_send(struct ipmi_msg * msg);

@@ -26,14 +26,14 @@
 #include "ipmi.h"
 #include "board_api.h"
 
-//#ifdef USE_FREERTOS
+#if USE_FREERTOS == 1
 #warning "MMC Verion"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
-//#else
-//#warning "BOOTLOADER Verion"
-//#endif
+#else
+#warning "BOOTLOADER Verion"
+#endif
 
 //static struct ipmi_msg * current_msg
 
@@ -67,7 +67,7 @@ int ipmb_decode(struct ipmi_msg *dst, uint8_t * buffer, int length) {
 
 	// @ todo: sprawdzic
 	dst->msg.data = dst->msg_data;
-	dst->msg.data_len = length - 6;
+	dst->msg.data_len = length - 6 -1; // last one is crc
 
 	int i = 0;
 	if (dst->msg.netfn & 0x01) {
@@ -218,14 +218,15 @@ static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 }
 
 
-
+unsigned char IPMB_slave_addr;
 
 /* Simulate an I2C EEPROM slave */
-void IPMB_init(I2C_ID_T id)
+unsigned char IPMB_init(I2C_ID_T id)
 {
 	memset(seep_data, 0xFF, I2C_SLAVE_EEPROM_SIZE);
 
-	seep_xfer.slaveAddr = (ipmb_get_GA());
+	IPMB_slave_addr = ipmb_get_GA();
+	seep_xfer.slaveAddr = IPMB_slave_addr;
 
 	seep_xfer.txBuff = &seep_data[1];
 	seep_xfer.rxBuff = &seep_data[1];
@@ -237,6 +238,7 @@ void IPMB_init(I2C_ID_T id)
 	if (id == I2C0)
 		Chip_I2C_SetMasterEventHandler(id, IPMB_I2C_EventHandler);
 #endif
+	return IPMB_slave_addr;
 }
 
 
@@ -270,12 +272,23 @@ void IPMB_send(struct ipmi_msg * msg) {
 }
 
 
-#define IPMBL_TABLE_SIZE 27
+/*
+ *  based on afcipm/src/i2c.c
+ *  author: Henrique Silva  <henrique.silva@lnls.br>
+ */
 
-uint8_t IPMBL_TABLE[IPMBL_TABLE_SIZE] = {
+
+uint8_t IPMBL_TABLE[] = {
     0x70, 0x8A, 0x72, 0x8E, 0x92, 0x90, 0x74, 0x8C, 0x76,
     0x98, 0x9C, 0x9A, 0xA0, 0xA4, 0x88, 0x9E, 0x86, 0x84,
     0x78, 0x94, 0x7A, 0x96, 0x82, 0x80, 0x7C, 0x7E, 0xA2 };
+
+#define IPMBL_TABLE_SIZE (sizeof(IPMBL_TABLE) / sizeof(uint8_t))
+
+/*
+ *  based on afcipm/src/i2c.c
+ *  author: Henrique Silva  <henrique.silva@lnls.br>
+ */
 
 uint8_t ipmb_get_GA( void )
 {

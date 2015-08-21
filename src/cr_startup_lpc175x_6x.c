@@ -45,7 +45,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#ifdef USE_FREERTOS
+#if USE_FREERTOS == 1
 #include "FreeRTOS.h"
 #endif
 

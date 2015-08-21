@@ -1,5 +1,5 @@
 /*
- * @brief NXP LPC1769 LPCXpresso Sysinit file
+ * @brief AFCv2 initialization file modified by Piotr Miedzik <P.Miedzik@gsi.de>
  *
  * @note
  * Copyright(C) NXP Semiconductors, 2013

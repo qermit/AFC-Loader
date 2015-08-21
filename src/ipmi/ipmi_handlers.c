@@ -24,6 +24,7 @@
 #include "ipmi.h"
 #include "board_api.h"
 #include "fru.h"
+#include "sdr.h"
 
 /*
 ipmiProcessFunc ipmi_picmg_cmd_get_telco_alarm_capability(struct ipmi_msg *req, struct ipmi_msg* rsp)
@@ -39,7 +40,7 @@ ipmiProcessFunc ipmi_picmg_cmd_default(struct ipmi_msg *req, struct ipmi_msg* rs
 }
 */
 
-ipmiProcessFunc ipmi_get_device_id(struct ipmi_msg *req, struct ipmi_msg* rsp)
+void ipmi_get_device_id(struct ipmi_msg *req, struct ipmi_msg* rsp)
 {
     int len = rsp->msg.data_len;
 
@@ -59,7 +60,7 @@ ipmiProcessFunc ipmi_get_device_id(struct ipmi_msg *req, struct ipmi_msg* rsp)
     rsp->retcode = IPMI_CC_OK;
 }
 
-ipmiProcessFunc ipmi_picmg_get_PROPERTIES(struct ipmi_msg *req, struct ipmi_msg* rsp){
+void ipmi_picmg_get_PROPERTIES(struct ipmi_msg *req, struct ipmi_msg* rsp){
 	int len = rsp->msg.data_len;
 
 	    rsp->msg_data[len++] = IPMI_PICMG_GRP_EXT;                            // Device ID
@@ -70,22 +71,27 @@ ipmiProcessFunc ipmi_picmg_get_PROPERTIES(struct ipmi_msg *req, struct ipmi_msg*
 	    rsp->retcode = IPMI_CC_OK;
 }
 
-ipmiProcessFunc ipmi_picmg_cmd_fru_control(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+void ipmi_picmg_cmd_fru_control(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	int len = 0;
 	rsp->msg_data[len++] = IPMI_PICMG_GRP_EXT;
 	rsp->msg.data_len = len;
+
+	do_quiesced(req->msg_data[2]);
+
 	rsp->retcode = IPMI_CC_OK;
 }
 
 
-ipmiProcessFunc ipmi_picmg_set_fru_led_state(struct ipmi_msg *req, struct ipmi_msg* rsp){
+void ipmi_picmg_set_fru_led_state(struct ipmi_msg *req, struct ipmi_msg* rsp){
 	int len = rsp->msg.data_len;
 	rsp->msg_data[len++] = IPMI_PICMG_GRP_EXT;                            // Device ID
 	rsp->msg.data_len = len;
     rsp->retcode = IPMI_CC_OK;
+
+
 }
 
-ipmiProcessFunc ipmi_picmg_get_device_locator_record(struct ipmi_msg *req, struct ipmi_msg* rsp){
+void ipmi_picmg_get_device_locator_record(struct ipmi_msg *req, struct ipmi_msg* rsp){
 	int len = rsp->msg.data_len;
 	rsp->msg_data[len++] = IPMI_PICMG_GRP_EXT;                            // Device ID
 	rsp->msg_data[len++] = 0;
@@ -96,7 +102,20 @@ ipmiProcessFunc ipmi_picmg_get_device_locator_record(struct ipmi_msg *req, struc
 }
 
 
-ipmiProcessFunc ipmi_se_set_event_reciever(struct ipmi_msg *req, struct ipmi_msg* rsp){
+void ipmi_picmg_cmd_set_amc_port_state(struct ipmi_msg *req, struct ipmi_msg* rsp){
+
+	rsp->msg_data[0] = IPMI_PICMG_GRP_EXT;                            // Device ID
+	rsp->msg.data_len = 1;
+	rsp->retcode = IPMI_CC_OK;
+
+}
+
+
+
+// @todo: fix this, move leave event sending for SDR routines
+// @remark: this will cause constant powering board in Vadatech crate
+
+void ipmi_se_set_event_reciever(struct ipmi_msg *req, struct ipmi_msg* rsp){
 
     struct ipmi_msg *pmsg = IPMI_alloc();
     struct ipmi_ipmb_addr *dst_addr = &pmsg->daddr;
@@ -113,7 +132,7 @@ ipmiProcessFunc ipmi_se_set_event_reciever(struct ipmi_msg *req, struct ipmi_msg
     pmsg->msg_data[data_len++] = 0xf2;
     pmsg->msg_data[data_len++] = 0;
     pmsg->msg_data[data_len++] = 0x6f;
-    pmsg->msg_data[data_len++] = 0x00; // hot swap state
+    pmsg->msg_data[data_len++] = 0x00; // hot swap state, handle closed
     pmsg->msg.data_len = data_len;
     IPMI_event_queue_append(pmsg);
 
@@ -121,7 +140,7 @@ ipmiProcessFunc ipmi_se_set_event_reciever(struct ipmi_msg *req, struct ipmi_msg
     rsp->retcode = IPMI_CC_OK;
 }
 
-ipmiProcessFunc ipmi_storage_get_fru_info(struct ipmi_msg *req, struct ipmi_msg* rsp){
+void ipmi_storage_get_fru_info(struct ipmi_msg *req, struct ipmi_msg* rsp){
 	int len = rsp->msg.data_len;
 	if (req->msg_data[0] == 0) {
 		rsp->msg_data[len++] = FRU_SIZE && 0xFF;
@@ -143,7 +162,7 @@ struct __attribute__((__packed__)) read_fru_data_param {
 	unsigned char length;
 
 } read_fru_data_param_t;
-ipmiProcessFunc ipmi_storage_read_fru_data_cmd(struct ipmi_msg *req, struct ipmi_msg* rsp){
+void ipmi_storage_read_fru_data_cmd(struct ipmi_msg *req, struct ipmi_msg* rsp){
 	struct read_fru_data_param * params = (struct read_fru_data_param *)req->msg_data;
 	int len = rsp->msg.data_len;
 
@@ -160,7 +179,7 @@ ipmiProcessFunc ipmi_storage_read_fru_data_cmd(struct ipmi_msg *req, struct ipmi
     rsp->retcode = IPMI_CC_OK;
 }
 
-ipmiProcessFunc ipmi_general_invalid(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+void ipmi_general_invalid(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	if (req->msg.netfn == NETFN_GRPEXT) {
 		rsp->msg_data[0] = IPMI_PICMG_GRP_EXT;                            // Device ID
 		rsp->msg.data_len = 1;
@@ -168,7 +187,7 @@ ipmiProcessFunc ipmi_general_invalid(struct ipmi_msg *req, struct ipmi_msg* rsp)
 	rsp->retcode =  IPMI_CC_INV_CMD;
 }
 
-ipmiProcessFunc ipmi_general_ok(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+void ipmi_general_ok(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	if (req->msg.netfn == NETFN_GRPEXT) {
 		rsp->msg_data[0] = IPMI_PICMG_GRP_EXT;                            // Device ID
 		rsp->msg.data_len = 1;

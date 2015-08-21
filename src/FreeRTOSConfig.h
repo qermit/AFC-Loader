@@ -70,22 +70,17 @@
 
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
+
 #ifndef USE_FREERTOS
 #error This project version is not compatible with FreeRTOS, Check variables
+#else
+#if USE_FREERTOS == 0
+#error This project version is not compatible with FreeRTOS, Check variables
 #endif
-//#define USE_FREERTOS2
-
-/*
- * The following #error directive is to remind users that a batch file must be
- * executed prior to this project being built.  The batch file *cannot* be
- * executed from within the IDE!  Once it has been executed, re-open or refresh
- * the Eclipse project and remove the #error line below.
- */
-//#error Ensure CreateProjectDirectoryStructure.bat has been executed before building.  See comment immediately above.
+#endif
 
 #include "board.h"
 
-//#include "LPC17xx.h"
 
 /*-----------------------------------------------------------
  * Application specific definitions.
@@ -194,10 +189,6 @@ numeric value the higher the interrupt priority). */
 extern void vConfigureTimerForRunTimeStats( void );
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats()
 #define portGET_RUN_TIME_COUNTER_VALUE() LPC_TIMER0->TC
-
-
-
-//#define difference
 
 
 #endif /* FREERTOS_CONFIG_H */

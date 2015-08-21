@@ -45,15 +45,7 @@
 #include "ipmi/ipmi_oem.h"
 
 
-//#ifndef USE_FREERTOS
-//#define USE_FREERTOS
-//#else DUPA
-//test
-//#endif
-
-
-
-#ifdef USE_FREERTOS
+#if USE_FREERTOS == 1
 #warning "MMC Verion"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -183,32 +175,7 @@ void I2C2_IRQHandler(void)
 //
 //}
 
-#define GPIO_EN_P1V2_PORT       0
-#define GPIO_EN_P1V2_PIN       23
-#define GPIO_EN_P1V8_PORT       0
-#define GPIO_EN_P1V8_PIN       24
 
-#define GPIO_EM_FMC1_P12V_PORT  0
-#define GPIO_EM_FMC1_P12V_PIN   4
-#define GPIO_EN_FMC1_P3V3_PORT  0
-#define GPIO_EN_FMC1_P3V3_PIN  25
-#define GPIO_EN_FMC1_PVADJ_PORT 1
-#define GPIO_EN_FMC1_PVADJ_PIN  31
-
-#define GPIO_EM_FMC2_P12V_PORT  0
-#define GPIO_EM_FMC2_P12V_PIN   5
-#define GPIO_EN_FMC2_P3V3_PORT  0
-#define GPIO_EN_FMC2_P3V3_PIN  26
-#define GPIO_EN_FMC2_PVADJ_PORT 1
-#define GPIO_EN_FMC2_PVADJ_PIN 28
-
-
-#define GPIO_EN_P3V3_PORT       1
-#define GPIO_EN_P3V3_PIN       27
-#define GPIO_EN_1V5_VTT_PORT    1
-#define GPIO_EN_1V5_VTT_PIN    29
-#define GPIO_EN_P1V0_PORT       3
-#define GPIO_EN_P1V0_PIN       25
 
 static void delay(  ) {
 uint16_t i = 0;
@@ -233,73 +200,9 @@ void reset_FPGA(void)
 	Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, false);
 }
 
-void setDC_DC_ConvertersON(bool on) {
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P1V2_PORT, GPIO_EN_P1V2_PIN, on);
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P1V8_PORT, GPIO_EN_P1V8_PIN, on);
-
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC2_P3V3_PORT, GPIO_EN_FMC2_P3V3_PIN, on);
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC2_PVADJ_PORT, GPIO_EN_FMC2_PVADJ_PIN, on);
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EM_FMC2_P12V_PORT, GPIO_EM_FMC2_P12V_PIN, on);
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EM_FMC1_P12V_PORT, GPIO_EM_FMC1_P12V_PIN, on);
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC1_P3V3_PORT, GPIO_EN_FMC1_P3V3_PIN, on);
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC1_PVADJ_PORT,	GPIO_EN_FMC1_PVADJ_PIN, on);
-
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P3V3_PORT, GPIO_EN_P3V3_PIN, on);
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_1V5_VTT_PORT, GPIO_EN_1V5_VTT_PIN, on);
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P1V0_PORT, GPIO_EN_P1V0_PIN, on);
 
 
 
-
-}
-void initializeDCDC() {
-	setDC_DC_ConvertersON(false);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V2_PORT, GPIO_EN_P1V2_PIN, true);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V8_PORT, GPIO_EN_P1V8_PIN, true);
-
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_FMC2_P3V3_PORT, GPIO_EN_FMC2_P3V3_PIN, true);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_FMC2_PVADJ_PORT, GPIO_EN_FMC1_PVADJ_PIN, true);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EM_FMC2_P12V_PORT, GPIO_EM_FMC1_P12V_PIN, true);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EM_FMC1_P12V_PORT, GPIO_EM_FMC1_P12V_PIN, true);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_FMC1_P3V3_PORT, GPIO_EN_FMC1_P3V3_PIN, true);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_FMC1_PVADJ_PORT,	GPIO_EN_FMC1_PVADJ_PIN, true);
-
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P3V3_PORT, GPIO_EN_P3V3_PIN, true);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_1V5_VTT_PORT, GPIO_EN_1V5_VTT_PIN, true);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V0_PORT, GPIO_EN_P1V0_PIN, true);
-}
-
-
-#define INA220_BUS_REG 0x02
-
-static void INA222_init(I2C_ID_T i2c)
-{
-	uint8_t ch[3];
-	ch[0] = 0 ; // INA220_CFG_REG
-	ch[1] = 0x01;
-	ch[2] = 0x9f;
-	Chip_I2C_MasterSend(i2c, 0x40, ch, 3);
-}
-
-static uint16_t INA222_readVolt(I2C_ID_T i2c)
-{
-	uint8_t ch[2];
-	Chip_I2C_MasterCmdRead(i2c, 0x40, INA220_BUS_REG, ch, 2 );
-
-	  //float retVal = 0.0;
-
-	  uint16_t tmpVal = 0.0;
-
-	  //bus volt
-	  tmpVal = ( 0x1fE0 & (ch[0]<< 5) ) | (  0x1f & (ch[1] >> 3) );
-	  tmpVal = tmpVal * 4;
-	  //tmpVal = (tmpVal >> 3);
-
-	  //retVal = (float)(  tmpVal*0.004 );
-//	DEBUGOUT("%02X %02x => %d\r\n", ch[0],ch[1], tmpVal);
-	return tmpVal;
-
-}
 
 
 int main(void) {
@@ -328,7 +231,6 @@ int main(void) {
 
     // TODO: insert code here
     //DEBUGOUT("TEST\n");
-    IPMI_init();
 
 #ifdef FREERTOS_CONFIG_H
     __enable_irq();
@@ -363,17 +265,22 @@ int main(void) {
 	Chip_GPIO_SetPinState(LPC_GPIO, 1, 22, true);
 
 
-    IPMB_init(I2C0);
+    IPMI_init();
+    unsigned char ipmi_slave_addr = IPMB_init(I2C0);
+	sdr_init(ipmi_slave_addr);
     DEBUGOUT("\r\nStart MMC\r\n");
 
 
 #ifdef FREERTOS_CONFIG_H
     TaskHandle_t xLedHandle = NULL;
     TaskHandle_t xIPMIHandle = NULL;
+    TaskHandle_t xSensorHandle = NULL;
 
-    xTaskCreate(LEDTask, "LED",configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xLedHandle );
+    do_quiesced_init();
 
-    xTaskCreate(vTaskIPMI, "IPMI",configMINIMAL_STACK_SIZE*5, NULL,  tskIDLE_PRIORITY, &xIPMIHandle );
+    xTaskCreate(LEDTask, "LED", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xLedHandle );
+    xTaskCreate(vTaskIPMI, "IPMI", configMINIMAL_STACK_SIZE*5, NULL,  tskIDLE_PRIORITY, &xIPMIHandle );
+    xTaskCreate(vTaskSensor, "Sensor", configMINIMAL_STACK_SIZE, NULL,  tskIDLE_PRIORITY, &xSensorHandle );
     if( xIPMIHandle != NULL )
          {
     	//     vTaskDelete( xIPMIHandle );

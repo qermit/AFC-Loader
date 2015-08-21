@@ -163,6 +163,7 @@ typedef void (*p_msDelay_func_t)(uint32_t);
 #define DEBUGIN() (int) EOF
 
 #else
+// @todo: add freertos support version
 #warning "USING DEBUG"
 #define DEBUGINIT() Board_Debug_Init()
 #define DEBUGOUT(...) printf(__VA_ARGS__)

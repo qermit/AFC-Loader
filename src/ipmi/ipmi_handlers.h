@@ -23,16 +23,19 @@
 #define IPMI_IPMI_HANDLERS_H_
 #include "ipmi.h"
 
-ipmiProcessFunc ipmi_get_device_id(struct ipmi_msg *req, struct ipmi_msg* rsp);
-ipmiProcessFunc ipmi_picmg_get_PROPERTIES(struct ipmi_msg *req, struct ipmi_msg* rsp);
-ipmiProcessFunc ipmi_picmg_cmd_fru_control(struct ipmi_msg *req, struct ipmi_msg* rsp);
-ipmiProcessFunc ipmi_picmg_set_fru_led_state(struct ipmi_msg *req, struct ipmi_msg* rsp);
-ipmiProcessFunc ipmi_picmg_get_device_locator_record(struct ipmi_msg *req, struct ipmi_msg* rsp);
-ipmiProcessFunc ipmi_se_set_event_reciever(struct ipmi_msg *req, struct ipmi_msg* rsp);
-ipmiProcessFunc ipmi_storage_get_fru_info(struct ipmi_msg *req, struct ipmi_msg* rsp);
-ipmiProcessFunc ipmi_storage_read_fru_data_cmd(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_get_device_id(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_picmg_get_PROPERTIES(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_picmg_cmd_fru_control(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_picmg_set_fru_led_state(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_picmg_get_device_locator_record(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_picmg_cmd_set_amc_port_state(struct ipmi_msg *req, struct ipmi_msg* rsp);
 
-ipmiProcessFunc ipmi_general_invalid(struct ipmi_msg *req, struct ipmi_msg* rsp) ;
+
+void ipmi_se_set_event_reciever(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_storage_get_fru_info(struct ipmi_msg *req, struct ipmi_msg* rsp);
+void ipmi_storage_read_fru_data_cmd(struct ipmi_msg *req, struct ipmi_msg* rsp);
+
+void ipmi_general_invalid(struct ipmi_msg *req, struct ipmi_msg* rsp) ;
 
 
 #endif /* IPMI_IPMI_HANDLERS_H_ */
