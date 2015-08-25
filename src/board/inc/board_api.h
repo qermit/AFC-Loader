@@ -167,6 +167,11 @@ typedef void (*p_msDelay_func_t)(uint32_t);
 #warning "USING DEBUG"
 #define DEBUGINIT() Board_Debug_Init()
 #define DEBUGOUT(...) printf(__VA_ARGS__)
+#if defined(DEBUG_ENABLE_IPMB)
+#define DEBUGOUT_IPMB(...) printf(__VA_ARGS__)
+#else
+#define DEBUGOUT_IPMB(...)
+#endif
 #define DEBUGSTR(str) Board_UARTPutSTR(str)
 #define DEBUGIN() Board_UARTGetChar()
 #endif /* defined(DEBUG_SEMIHOSTING) */

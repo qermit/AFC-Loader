@@ -551,4 +551,7 @@ void IPMI_req_queue_pushback(struct ipmi_msg * msg);
 struct ipmi_msg * IPMI_req_queue_get();
 TickType_t getTickDifference(TickType_t current_time, TickType_t start_time) ;
 
+void IPMI_evet_set_address(struct ipmi_ipmb_addr * src, struct ipmi_ipmb_addr * dst);
+void IPMI_evet_get_address(struct ipmi_ipmb_addr * src, struct ipmi_ipmb_addr * dst);
+
 #endif /* IPMI_H_ */

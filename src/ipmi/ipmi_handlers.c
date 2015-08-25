@@ -25,7 +25,7 @@
 #include "board_api.h"
 #include "fru.h"
 #include "sdr.h"
-
+#include "payload.h"
 /*
 ipmiProcessFunc ipmi_picmg_cmd_get_telco_alarm_capability(struct ipmi_msg *req, struct ipmi_msg* rsp)
 {
@@ -76,7 +76,12 @@ void ipmi_picmg_cmd_fru_control(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	rsp->msg_data[len++] = IPMI_PICMG_GRP_EXT;
 	rsp->msg.data_len = len;
 
-	do_quiesced(req->msg_data[2]);
+	if (req->msg_data[2] == FRU_CTLCODE_QUIESCE) {
+		payload_send_message(PAYLOAD_MESSAGE_QUIESCED);
+	} else {
+		// @todo:
+	}
+	//do_quiesced(req->msg_data[2]);
 
 	rsp->retcode = IPMI_CC_OK;
 }
@@ -117,13 +122,13 @@ void ipmi_picmg_cmd_set_amc_port_state(struct ipmi_msg *req, struct ipmi_msg* rs
 
 void ipmi_se_set_event_reciever(struct ipmi_msg *req, struct ipmi_msg* rsp){
 
-    struct ipmi_msg *pmsg = IPMI_alloc();
+/*
+	struct ipmi_msg *pmsg = IPMI_alloc();
     struct ipmi_ipmb_addr *dst_addr = &pmsg->daddr;
     struct ipmi_ipmb_addr *src_addr = &pmsg->saddr;
-    src_addr->lun = 0;
-    src_addr->slave_addr = 0x76;
-    dst_addr->lun = 0;
-    dst_addr->slave_addr = 0x20;
+
+    IPMI_evet_get_address(src_addr, dst_addr);
+
     pmsg->msg.lun = 0;
     pmsg->msg.netfn = NETFN_SE;
     pmsg->msg.cmd = IPMI_PLATFORM_EVENT_CMD;
@@ -135,7 +140,7 @@ void ipmi_se_set_event_reciever(struct ipmi_msg *req, struct ipmi_msg* rsp){
     pmsg->msg_data[data_len++] = 0x00; // hot swap state, handle closed
     pmsg->msg.data_len = data_len;
     IPMI_event_queue_append(pmsg);
-
+*/
 
     rsp->retcode = IPMI_CC_OK;
 }

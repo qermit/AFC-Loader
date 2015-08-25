@@ -56,6 +56,33 @@ static const ipmiFuncEntry_t const ipmiEntries[] = {
 		{ 0, 0, NULL }
 };
 
+// @todo: moze jakis mutex
+struct ipmi_ipmb_addr event_src;
+struct ipmi_ipmb_addr event_dst;
+
+void IPMI_evet_set_address(struct ipmi_ipmb_addr * src, struct ipmi_ipmb_addr * dst) {
+	if (src == NULL ) {
+		memset(&event_src,0, sizeof(event_src));
+	} else {
+		memcpy(&event_src, src, sizeof(event_src));
+	}
+
+	if ( dst == NULL) {
+		memset(&event_dst,0, sizeof(event_dst));
+	} else {
+		memcpy(&event_dst, dst, sizeof(event_dst));
+	}
+}
+
+void IPMI_evet_get_address(struct ipmi_ipmb_addr * src, struct ipmi_ipmb_addr * dst) {
+	if (src!= NULL) {
+		memcpy(src, &event_src, sizeof(event_src));
+	}
+	if (dst!= NULL) {
+		memcpy(dst, &event_dst, sizeof(event_dst));
+	}
+}
+
 #ifdef FREERTOS_CONFIG_H
 #define IPMI_BUFF_COUNT 10
 #else

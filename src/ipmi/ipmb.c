@@ -167,13 +167,13 @@ static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 	Board_LED_Toggle(2);
 	switch(event) {
 		case I2C_EVENT_DONE:
-			//DEBUGOUT("%x %x %d\r\n", seep_data, seep_xfer.rxBuff, seep_xfer.rxSz);
+			//DEBUGOUT_IPMB("%x %x %d\r\n", seep_data, seep_xfer.rxBuff, seep_xfer.rxSz);
 			seep_data[0] = seep_xfer.slaveAddr;
-			DEBUGOUT("===\r\nIPMB IN:  ", seep_xfer.rxSz);
+			DEBUGOUT_IPMB("===\r\nIPMB IN:  ", seep_xfer.rxSz);
 			for (ptr = seep_data; ptr < seep_xfer.rxBuff; ptr++) {
-				DEBUGOUT("%02x ", *ptr);
+				DEBUGOUT_IPMB("%02x ", *ptr);
 			}
-			DEBUGOUT("\r\n");
+			DEBUGOUT_IPMB("\r\n");
 			decode_result = -1;
 			p_ipmi_req = IPMI_alloc_fromISR();
 			if (p_ipmi_req != NULL)
@@ -196,14 +196,14 @@ static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 				IPMI_free_fromISR(p_ipmi_req);
 			}
 
-			//DEBUGOUT("CRC: %02x, %02x, %02x, %02x\r\n",ipmb_crc(seep_data, 3), ipmb_crc(seep_data, 2),ipmb_crc(seep_data, seep_xfer.rxBuff - seep_data ),ipmb_crc(seep_data, seep_xfer.rxBuff - seep_data -1 ));
+			//DEBUGOUT_IPMB("CRC: %02x, %02x, %02x, %02x\r\n",ipmb_crc(seep_data, 3), ipmb_crc(seep_data, 2),ipmb_crc(seep_data, seep_xfer.rxBuff - seep_data ),ipmb_crc(seep_data, seep_xfer.rxBuff - seep_data -1 ));
 			seep_xfer.rxBuff = &seep_data[1];
 			seep_xfer.rxSz = 32;
 			break;
 
 		case I2C_EVENT_SLAVE_RX:
 			//if (seep_xfer.slaveAddr )
-			//DEBUGOUT("%02X ", seep_xfer.rxBuff);
+			//DEBUGOUT_IPMB("%02X ", seep_xfer.rxBuff);
 			//pos++;
 			break;
 
@@ -249,11 +249,11 @@ void IPMB_send(struct ipmi_msg * msg) {
 	int length  = ipmb_encode(i2c_output_buffer, msg, 32);
 	int i;
 
-	DEBUGOUT("IPMB out: ");
+	DEBUGOUT_IPMB("IPMB out: ");
 	for (i = 0; i< length; i++) {
-		DEBUGOUT("%02x ", i2c_output_buffer[i]);
+		DEBUGOUT_IPMB("%02x ", i2c_output_buffer[i]);
 	}
-	DEBUGOUT("\r\n");
+	DEBUGOUT_IPMB("\r\n");
 
 	//* todo - change to send and forget
 //	Board_LED_Set(1,1);
@@ -284,6 +284,21 @@ uint8_t IPMBL_TABLE[] = {
     0x78, 0x94, 0x7A, 0x96, 0x82, 0x80, 0x7C, 0x7E, 0xA2 };
 
 #define IPMBL_TABLE_SIZE (sizeof(IPMBL_TABLE) / sizeof(uint8_t))
+
+uint8_t ipmb_get_slot_by_address(uint8_t address){
+	if (address & 0x01) return 0;
+	if (address < 0x70) return 0;
+
+	uint8_t slot = 0x70 - address;
+	return (slot / 2);
+
+}
+
+uint8_t ipmb_get_address_by_slot(uint8_t slot){
+	if (slot >= IPMBL_TABLE_SIZE) return 0x70;
+	return (0x70+(slot*2));
+}
+
 
 /*
  *  based on afcipm/src/i2c.c

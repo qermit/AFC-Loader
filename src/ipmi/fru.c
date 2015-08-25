@@ -56,3 +56,7 @@ void fru_read_to_buffer(char *buff, int offset, int length) {
 
 		}
 }
+
+void fru_read_common_header(fru_common_header_t * header) {
+	fru_read_to_buffer(header, 0, sizeof(fru_common_header_t));
+}

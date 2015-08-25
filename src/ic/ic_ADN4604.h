@@ -1,9 +1,9 @@
 /*
- * fru.h
+ * ic_ADN4604.h
  *
  *   AFCIPMI  --
  *
- *   Copyright (C) 2015  Piotr Miedzik  <P.Miedzik@gsi.de>
+ *   Copyright (C) 2015  Piotr Miedzik <P.Miedzik@gsi.de>
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -19,17 +19,11 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef IPMI_FRU_H_
-#define IPMI_FRU_H_
+#ifndef IC_IC_ADN4604_H_
+#define IC_IC_ADN4604_H_
 
-#include "ipmi.h"
+#include "i2c_17xx_40xx.h"
 
+void adn4604_setup(I2C_ID_T i2c_bus);
 
-#define FRU_SIZE 512
-
-
-void fru_read_to_buffer(char *buff, int offset, int length);
-void fru_read_common_header(fru_common_header_t * header);
-
-
-#endif /* IPMI_FRU_H_ */
+#endif /* IC_IC_ADN4604_H_ */

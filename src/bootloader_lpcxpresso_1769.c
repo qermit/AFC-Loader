@@ -43,6 +43,7 @@
 #include "ipmi/sdr.h"
 #include "ipmi/ipmi_handlers.h"
 #include "ipmi/ipmi_oem.h"
+#include "ipmi/payload.h"
 
 
 #if USE_FREERTOS == 1
@@ -268,6 +269,18 @@ int main(void) {
     IPMI_init();
     unsigned char ipmi_slave_addr = IPMB_init(I2C0);
 	sdr_init(ipmi_slave_addr);
+
+	{
+		struct ipmi_ipmb_addr tmp_src;
+		struct ipmi_ipmb_addr tmp_dst;
+		tmp_src.lun = 0;
+		tmp_src.slave_addr = ipmi_slave_addr;
+		tmp_dst.lun = 0;
+		tmp_dst.slave_addr = 0x20;
+
+		IPMI_evet_set_address(&tmp_src,&tmp_dst);
+	}
+
     DEBUGOUT("\r\nStart MMC\r\n");
 
 
@@ -275,12 +288,14 @@ int main(void) {
     TaskHandle_t xLedHandle = NULL;
     TaskHandle_t xIPMIHandle = NULL;
     TaskHandle_t xSensorHandle = NULL;
+    TaskHandle_t xPayloadHandle = NULL;
 
     do_quiesced_init();
 
     xTaskCreate(LEDTask, "LED", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xLedHandle );
     xTaskCreate(vTaskIPMI, "IPMI", configMINIMAL_STACK_SIZE*5, NULL,  tskIDLE_PRIORITY, &xIPMIHandle );
     xTaskCreate(vTaskSensor, "Sensor", configMINIMAL_STACK_SIZE, NULL,  tskIDLE_PRIORITY, &xSensorHandle );
+    xTaskCreate(vTaskPayload, "Payload", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xPayloadHandle);
     if( xIPMIHandle != NULL )
          {
     	//     vTaskDelete( xIPMIHandle );

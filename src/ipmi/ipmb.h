@@ -50,6 +50,8 @@ unsigned char IPMB_init(I2C_ID_T id);
 
 void IPMB_send(struct ipmi_msg * msg);
 
+uint8_t ipmb_get_slot_by_address(uint8_t address);
+uint8_t ipmb_get_address_by_slot(uint8_t slot);
 uint8_t ipmb_get_GA( void );
 
 

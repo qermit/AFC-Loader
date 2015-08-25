@@ -99,7 +99,33 @@ void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp)
 	SemaphoreHandle_t xSemaphore  = i2c_mutex_array[i2c_bus_id].semaphore;
 	if (xSemaphoreTake(xSemaphore, (TickType_t)100) == pdTRUE) {
 		// reconfigure bus
-		if (i2c_bus_id == 0 && i2c_bus == 2) {
+		if (i2c_bus_id == 0 && i2c_bus == 0) {
+			Chip_I2C_Disable(i2c_mutex_array[i2c_bus_id].i2c_bus);
+
+			Chip_I2C_DeInit(i2c_mutex_array[i2c_bus_id].i2c_bus);
+
+			Chip_IOCON_PinMux(LPC_IOCON, 0,  0, IOCON_MODE_INACT, IOCON_FUNC0);
+			Chip_IOCON_PinMux(LPC_IOCON, 0,  1, IOCON_MODE_INACT, IOCON_FUNC0);
+			//Chip_IOCON_EnableOD(LPC_IOCON, 0,  0);
+			//Chip_IOCON_EnableOD(LPC_IOCON, 0,  1);
+
+			Chip_IOCON_PinMux(LPC_IOCON, 0, 19, IOCON_MODE_INACT, IOCON_FUNC3);
+			Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC3);
+			Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
+			Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
+			Chip_I2C_Init(i2c_mutex_array[i2c_bus_id].i2c_bus);
+			Chip_I2C_Enable(i2c_mutex_array[i2c_bus_id].i2c_bus);
+
+
+		}
+
+		i2c_mutex_array[i2c_bus_id].start_time = xTaskGetTickCount();
+		while (Chip_I2C_MasterTransfer(i2c_mutex_array[i2c_bus_id].i2c_bus, &xfer) == I2C_STATUS_ARBLOST) {
+		}
+		i2c_bytes_sent = req->msg_data[2] - xfer.txSz;
+		i2c_bytes_recv = req->msg_data[3] - xfer.rxSz;
+
+		if (i2c_bus_id == 0 && i2c_bus == 0) {
 			Chip_I2C_Disable(i2c_mutex_array[i2c_bus_id].i2c_bus);
 
 			Chip_I2C_DeInit(i2c_mutex_array[i2c_bus_id].i2c_bus);
@@ -114,30 +140,6 @@ void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp)
 		//Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
 		//Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
 
-			Chip_I2C_Init(i2c_mutex_array[i2c_bus_id].i2c_bus);
-			Chip_I2C_Enable(i2c_mutex_array[i2c_bus_id].i2c_bus);
-		}
-
-		i2c_mutex_array[i2c_bus_id].start_time = xTaskGetTickCount();
-		while (Chip_I2C_MasterTransfer(i2c_mutex_array[i2c_bus_id].i2c_bus, &xfer) == I2C_STATUS_ARBLOST) {
-		}
-		i2c_bytes_sent = req->msg_data[2] - xfer.txSz;
-		i2c_bytes_recv = req->msg_data[3] - xfer.rxSz;
-
-		if (i2c_bus_id == 0 && i2c_bus == 2) {
-			Chip_I2C_Disable(i2c_mutex_array[i2c_bus_id].i2c_bus);
-
-			Chip_I2C_DeInit(i2c_mutex_array[i2c_bus_id].i2c_bus);
-
-			Chip_IOCON_PinMux(LPC_IOCON, 0,  0, IOCON_MODE_INACT, IOCON_FUNC0);
-			Chip_IOCON_PinMux(LPC_IOCON, 0,  1, IOCON_MODE_INACT, IOCON_FUNC0);
-			//Chip_IOCON_EnableOD(LPC_IOCON, 0,  0);
-			//Chip_IOCON_EnableOD(LPC_IOCON, 0,  1);
-
-			Chip_IOCON_PinMux(LPC_IOCON, 0, 19, IOCON_MODE_INACT, IOCON_FUNC3);
-			Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC3);
-			Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
-			Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
 			Chip_I2C_Init(i2c_mutex_array[i2c_bus_id].i2c_bus);
 			Chip_I2C_Enable(i2c_mutex_array[i2c_bus_id].i2c_bus);
 		}
