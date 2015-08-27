@@ -27,6 +27,7 @@
 
 #define IPMI_AFC_CMD_I2C_TRANSFER			0x00
 #define IPMI_AFC_CMD_GPIO					0x01
+#define IPMI_AFC_CMD_SSP_TRANSFER			0x04
 #define IPMI_AFC_CMD_CLOCK_CROSSBAR_GET		0x02
 #define IPMI_AFC_CMD_CLOCK_CROSSBAR_SET		0x03
 
@@ -36,8 +37,10 @@ struct I2C_Mutex {
 	I2C_ID_T i2c_bus;
 };
 
+void create_ssp1_mutex();
+
 void ipmi_afc_gpio(struct ipmi_msg *req, struct ipmi_msg* rsp);
 void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp);
-
+void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp);
 
 #endif /* IPMI_IPMI_OEM_H_ */

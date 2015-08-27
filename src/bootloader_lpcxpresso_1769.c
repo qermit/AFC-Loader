@@ -162,6 +162,8 @@ void I2C2_IRQHandler(void)
 //	portYIELD();
 }
 
+
+
 //static void delay(  ) {
 //uint16_t i = 0;
 //uint8_t z = 0;
@@ -200,7 +202,6 @@ void reset_FPGA(void)
 	Chip_GPIO_SetPinState(LPC_GPIO, 0, 6, true );
 	Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, false);
 }
-
 
 
 
@@ -246,6 +247,14 @@ int main(void) {
 	xSemaphoreGive(i2c_mutex_array[1].semaphore);
 	i2c_mutex_array[1].i2c_bus = I2C2;
 	i2c_app_init(I2C2, SPEED_100KHZ, I2CMODE_INTERRUPT);
+
+
+	Board_SSP_Init(LPC_SSP1);
+	Chip_SSP_Init(LPC_SSP1);
+	Chip_SSP_Enable(LPC_SSP1);
+	Chip_SSP_SetMaster(LPC_SSP1, 1);
+	create_ssp1_mutex();
+
 #else
     i2c_app_init(I2C0, SPEED_100KHZ, I2CMODE_POOLING);
 #endif
@@ -259,6 +268,13 @@ int main(void) {
 //       setDC_DC_ConvertersON(false);
 //    }
 
+
+//	NVIC_ClearPendingIRQ(EINT2_IRQn);
+//	NVIC_SetPriority(EINT2_IRQn, 0);
+//	LPC_SYSCTL->EXTINT = 1UL << 2;
+//	LPC_SYSCTL->EXTMODE = 1UL << 2;
+//	LPC_SYSCTL->EXTPOLAR = 0UL << 2;
+//	NVIC_EnableIRQ(EINT2_IRQn);
 
     Chip_GPIO_SetPinState(LPC_GPIO, 1, 22, false);
 	Chip_GPIO_SetPinDIR(LPC_GPIO, 1, 22, true);
