@@ -44,9 +44,9 @@
 #include "ipmi/ipmi_handlers.h"
 #include "ipmi/ipmi_oem.h"
 #include "ipmi/payload.h"
+#include "afc/board_version.h"
 
-
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS == 1
 #warning "MMC Verion"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -55,21 +55,9 @@
 #warning "BOOTLOADER Verion"
 #endif
 
-#define SPEED_100KHZ         100000
-#define SPEED_100KHZ         90000
-
-#define I2CMODE_POOLING 1
-#define I2CMODE_INTERRUPT 0
-
-static int mode_poll;   /* Poll/Interrupt mode flag */
-
-
 #define DELAY_PERIOD 1000
 
 #ifdef FREERTOS_CONFIG_H
-
-extern struct I2C_Mutex i2c_mutex_array[2];
-
 
 void LEDTask( void *pvParmeters )
 {
@@ -87,44 +75,6 @@ TickType_t xLastWakeTime;
 }
 #endif
 
-
-
-//static int pending_response;
-
-/* Set I2C mode to polling/interrupt */
-static void i2c_set_mode(I2C_ID_T id, int polling)
-{
-	IRQn_Type irq_type = I2C0_IRQn;
-	switch (id) {
-		case I2C0: irq_type = I2C0_IRQn; break ;
-		case I2C1: irq_type = I2C1_IRQn; break ;
-		case I2C2: irq_type = I2C2_IRQn; break ;
-		default: return;
-
-	}
-
-	if(!polling) {
-		mode_poll &= ~(1 << id);
-		Chip_I2C_SetMasterEventHandler(id, Chip_I2C_EventHandler);
-		NVIC_EnableIRQ(irq_type);
-	} else {
-		mode_poll |= 1 << id;
-		NVIC_DisableIRQ(irq_type);
-		Chip_I2C_SetMasterEventHandler(id, Chip_I2C_EventHandlerPolling);
-	}
-}
-
-static void i2c_app_init(I2C_ID_T id, int speed, int pooling)
-{
-	Board_I2C_Init(id);
-
-	/* Initialize I2C */
-	Chip_I2C_Init(id);
-	Chip_I2C_SetClockRate(id, speed);
-
-	/* Set default mode to interrupt */
-	i2c_set_mode(id, pooling);
-}
 
 /* State machine handler for I2C0 and I2C1 */
 static void i2c_state_handling(I2C_ID_T id)
@@ -162,21 +112,6 @@ void I2C2_IRQHandler(void)
 //	portYIELD();
 }
 
-
-
-//static void delay(  ) {
-//uint16_t i = 0;
-//uint8_t z = 0;
-//
-//	for(i=0; i<20000; i++)
-//	{
-//		for(z=0; z<100; z++)
-//		{
-//
-//		}
-//	}
-//
-//}
 
 
 
@@ -219,55 +154,36 @@ int main(void) {
 
     Board_LED_Set(1, true);
     initializeDCDC();
-   // setDC_DC_ConvertersON(true);
-   // reset_FPGA();
-  //  setDC_DC_ConvertersON(false);
-
 #endif
 #endif
-
-
-  //  Chip_Clock_SetCLKOUTSource(SYSCTL_CLKOUTSRC_CPU, 1);
-  //  Chip_IOCON_PinMux(LPC_IOCON, 1, 27, IOCON_MODE_INACT, IOCON_FUNC1);
-  //  Chip_Clock_EnableCLKOUT();
-
-    // TODO: insert code here
-    //DEBUGOUT("TEST\n");
 
 #ifdef FREERTOS_CONFIG_H
     __enable_irq();
 	i2c_app_init(I2C0, SPEED_100KHZ, I2CMODE_INTERRUPT);
 
-	i2c_mutex_array[0].semaphore = xSemaphoreCreateBinary();
-	xSemaphoreGive(i2c_mutex_array[0].semaphore);
-	i2c_mutex_array[0].i2c_bus = I2C1;
-	i2c_app_init(I2C1, SPEED_100KHZ, I2CMODE_INTERRUPT);
 
-	i2c_mutex_array[1].semaphore = xSemaphoreCreateBinary();
-	xSemaphoreGive(i2c_mutex_array[1].semaphore);
-	i2c_mutex_array[1].i2c_bus = I2C2;
-	i2c_app_init(I2C2, SPEED_100KHZ, I2CMODE_INTERRUPT);
-
+	afc_board_i2c_init();
 
 	Board_SSP_Init(LPC_SSP1);
 	Chip_SSP_Init(LPC_SSP1);
 	Chip_SSP_Enable(LPC_SSP1);
 	Chip_SSP_SetMaster(LPC_SSP1, 1);
 	create_ssp1_mutex();
+    DEBUGOUT("\r\nAFC/AFCK MMC");
 
 #else
     i2c_app_init(I2C0, SPEED_100KHZ, I2CMODE_POOLING);
+    DEBUGOUT("\r\nAFC/AFCK Bootloader ");
+
 #endif
 
+	DEBUGOUT(" Copyright (C) 2015  Piotr Miedzik <P.Miedzik@gsi.de>\r\n");
+	DEBUGOUT("This program comes with ABSOLUTELY NO WARRANTY;\r\n");
+	DEBUGOUT("This is free software, and you are welcome to redistribute it\r\n");
+	DEBUGOUT("under certain conditions;\r\n");
 
-//    INA222_init(I2C1);
-//    if (INA222_readVolt(I2C1) > 12000) {
-//    	setDC_DC_ConvertersON(true);
-//    } else {
-//    // reset_FPGA();
-//       setDC_DC_ConvertersON(false);
-//    }
 
+    afc_board_discover();
 
 //	NVIC_ClearPendingIRQ(EINT2_IRQn);
 //	NVIC_SetPriority(EINT2_IRQn, 0);
@@ -297,7 +213,6 @@ int main(void) {
 		IPMI_evet_set_address(&tmp_src,&tmp_dst);
 	}
 
-    DEBUGOUT("\r\nStart MMC\r\n");
 
 
 #ifdef FREERTOS_CONFIG_H
@@ -312,10 +227,7 @@ int main(void) {
     xTaskCreate(vTaskIPMI, "IPMI", configMINIMAL_STACK_SIZE*5, NULL,  tskIDLE_PRIORITY, &xIPMIHandle );
     xTaskCreate(vTaskSensor, "Sensor", configMINIMAL_STACK_SIZE, NULL,  tskIDLE_PRIORITY, &xSensorHandle );
     xTaskCreate(vTaskPayload, "Payload", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xPayloadHandle);
-    if( xIPMIHandle != NULL )
-         {
-    	//     vTaskDelete( xIPMIHandle );
-         }
+
     vTaskStartScheduler();
 #else
     while(1) {

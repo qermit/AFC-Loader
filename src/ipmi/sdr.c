@@ -27,6 +27,7 @@
 #include "board.h"
 #include "ipmi_oem.h"
 #include "payload.h"
+#include <afc/board_version.h>
 
 #define NUM_SENSOR 		4	/* Number of sensors */
 #define NUM_SDR         (NUM_SENSOR+1)   /* Number of SDRs */
@@ -583,47 +584,12 @@ void vTaskSensor( void *pvParmeters )
    // xLastWakeTime = xTaskGetTickCount();
     SDR_type_01h_t *pSDR = NULL;
     sensor_data_entry_t * pDATA;
+    I2C_ID_T i2c_bus_id;
+    uint8_t i2c_address;
 
-	if (xSemaphoreTake(i2c_mutex_array[0].semaphore, (TickType_t)0) == pdTRUE) {
-		// @todo: implement i2c muxing routines
-
-		// switch bus
-//		Chip_I2C_Disable(i2c_mutex_array[0].i2c_bus);
-//
-//		Chip_I2C_DeInit(i2c_mutex_array[0].i2c_bus);
-//
-//		Chip_IOCON_PinMux(LPC_IOCON, 0, 0, IOCON_MODE_INACT, IOCON_FUNC3);
-//		Chip_IOCON_PinMux(LPC_IOCON, 0, 1, IOCON_MODE_INACT, IOCON_FUNC3);
-//		Chip_IOCON_EnableOD(LPC_IOCON, 0, 0);
-//		Chip_IOCON_EnableOD(LPC_IOCON, 0, 1);
-//
-//		Chip_IOCON_PinMux(LPC_IOCON, 0, 19, IOCON_MODE_INACT, IOCON_FUNC0);
-//		Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC0);
-//		//Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
-//		//Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
-//
-//		Chip_I2C_Init(i2c_mutex_array[0].i2c_bus);
-//		Chip_I2C_Enable(i2c_mutex_array[0].i2c_bus);
-
-		INA222_init(i2c_mutex_array[0].i2c_bus, 0x40);
-
-//		Chip_I2C_Disable(i2c_mutex_array[0].i2c_bus);
-//
-//		Chip_I2C_DeInit(i2c_mutex_array[0].i2c_bus);
-//
-//		Chip_IOCON_PinMux(LPC_IOCON, 0, 0, IOCON_MODE_INACT, IOCON_FUNC0);
-//		Chip_IOCON_PinMux(LPC_IOCON, 0, 1, IOCON_MODE_INACT, IOCON_FUNC0);
-//		//Chip_IOCON_EnableOD(LPC_IOCON, 0,  0);
-//		//Chip_IOCON_EnableOD(LPC_IOCON, 0,  1);
-//
-//		Chip_IOCON_PinMux(LPC_IOCON, 0, 19, IOCON_MODE_INACT, IOCON_FUNC3);
-//		Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC3);
-//		Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
-//		Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
-//		Chip_I2C_Init(i2c_mutex_array[0].i2c_bus);
-//		Chip_I2C_Enable(i2c_mutex_array[0].i2c_bus);
-
-		xSemaphoreGive(i2c_mutex_array[0].semaphore);
+	if (afc_i2c_take_by_chipid(CHIP_ID_INA_0, &i2c_address,&i2c_bus_id, (TickType_t) 0 ) == pdTRUE ) {
+		INA222_init(i2c_bus_id, i2c_address);
+		afc_i2c_give(i2c_bus_id);
 	} else {
 		// fatal error
 	}
@@ -657,30 +623,10 @@ void vTaskSensor( void *pvParmeters )
     		continue;
     	}
     	/* @todo: add real delay checking */
-    	if (xSemaphoreTake(i2c_mutex_array[0].semaphore, (TickType_t)100) == pdTRUE) {
-    		// switch bus
-
-//			Chip_I2C_Disable(i2c_mutex_array[0].i2c_bus);
-//
-//			Chip_I2C_DeInit(i2c_mutex_array[0].i2c_bus);
-//
-//			Chip_IOCON_PinMux(LPC_IOCON, 0,  0, IOCON_MODE_INACT, IOCON_FUNC3);
-//			Chip_IOCON_PinMux(LPC_IOCON, 0,  1, IOCON_MODE_INACT, IOCON_FUNC3);
-//			Chip_IOCON_EnableOD(LPC_IOCON, 0,  0);
-//			Chip_IOCON_EnableOD(LPC_IOCON, 0,  1);
-//
-//			Chip_IOCON_PinMux(LPC_IOCON, 0, 19, IOCON_MODE_INACT, IOCON_FUNC0);
-//			Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC0);
-//		//Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
-//		//Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
-//
-//			Chip_I2C_Init(i2c_mutex_array[0].i2c_bus);
-//			Chip_I2C_Enable(i2c_mutex_array[0].i2c_bus);
-
+    	if (afc_i2c_take_by_busid(I2C_BUS_CPU_ID, &i2c_bus_id, (TickType_t)100) == pdTRUE) {
 
 			// @todo: add sensor check loop
 			// @todo: add timestamping??
-
 			// HotSwap
 			i=1;
 			pSDR = (SDR_type_01h_t *) sensor_array[i].sdr;
@@ -727,7 +673,7 @@ void vTaskSensor( void *pvParmeters )
 			pSDR = (SDR_type_01h_t *) sensor_array[i].sdr;
 			pDATA = sensor_array[i].data;
 			if (pSDR->sensornum == NUM_SDR_FMC2_12V) {
-				pDATA->readout_value = INA222_readVolt(i2c_mutex_array[0].i2c_bus, 0x40, true) / 16;
+				pDATA->readout_value = INA222_readVolt(i2c_bus_id, 0x40, true) / 16;
 
 				if (pDATA->readout_value > pSDR->lower_noncritical_thr) {
 					payload_send_message(PAYLOAD_MESSAGE_P12GOOD);
@@ -740,24 +686,9 @@ void vTaskSensor( void *pvParmeters )
 				if (sensor_array[i].callback_function == NULL) continue;
 				sensor_array[i].callback_function(&sensor_array[i]);
 			}
-			// restore bus;
-//			Chip_I2C_Disable(i2c_mutex_array[0].i2c_bus);
-//
-//			Chip_I2C_DeInit(i2c_mutex_array[0].i2c_bus);
-//
-//			Chip_IOCON_PinMux(LPC_IOCON, 0, 0, IOCON_MODE_INACT, IOCON_FUNC0);
-//			Chip_IOCON_PinMux(LPC_IOCON, 0, 1, IOCON_MODE_INACT, IOCON_FUNC0);
-//			//Chip_IOCON_EnableOD(LPC_IOCON, 0,  0);
-//			//Chip_IOCON_EnableOD(LPC_IOCON, 0,  1);
-//
-//			Chip_IOCON_PinMux(LPC_IOCON, 0, 19, IOCON_MODE_INACT, IOCON_FUNC3);
-//			Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC3);
-//			Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
-//			Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
-//			Chip_I2C_Init(i2c_mutex_array[0].i2c_bus);
-//			Chip_I2C_Enable(i2c_mutex_array[0].i2c_bus);
 
-			xSemaphoreGive(i2c_mutex_array[0].semaphore);
+			afc_i2c_give(i2c_bus_id);
+
     	}
 
 
