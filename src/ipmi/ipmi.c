@@ -53,7 +53,7 @@ static const ipmiFuncEntry_t const ipmiEntries[] = {
 		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_I2C_TRANSFER, ipmi_afc_i2c_transfer},
 		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_GPIO, ipmi_afc_gpio},
 		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_SSP_TRANSFER, ipmi_afc_ssp_transfer},
-
+		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_SSP_TRANSFER_RAW, ipmi_afc_ssp_transfer_raw},
 		{ 0, 0, NULL }
 };
 

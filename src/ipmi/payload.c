@@ -31,6 +31,7 @@
 #include "ipmi/ipmi_oem.h"
 
 #include "ic/ic_ADN4604.h"
+#include <afc/board_version.h>
 
 /* payload states
  *   0 - no power
@@ -131,6 +132,7 @@ void vTaskPayload(void *pvParmeters) {
 // payload
 	enum payload_state state = PAYLOAD_NO_POWER;
 	enum payload_state new_state = PAYLOAD_STATE_NO_CHANGE;
+	I2C_ID_T i2c_bus_id;
 	queue_payload_handle = xQueueCreate(16, sizeof(uint8_t));
 
 	TickType_t xDelay = 10;
@@ -198,9 +200,9 @@ void vTaskPayload(void *pvParmeters) {
 				//Chip_GPIO_SetPinState(LPC_GPIO, GPIO_PROGRAM_B_PORT, GPIO_PROGRAM_B_PIN, false);
 
 				//vTaskDelayUntil( &xLastWakeTime, 1000 );
-				if (xSemaphoreTake(i2c_mutex_array[0].semaphore, 100) == pdTRUE) {
-					adn4604_setup(i2c_mutex_array[0].i2c_bus);
-					xSemaphoreGive(i2c_mutex_array[0].semaphore);
+				if (afc_i2c_take_by_chipid(CHIP_ID_ADN, NULL, &i2c_bus_id, 100 ) == pdTRUE) {
+					adn4604_setup(i2c_bus_id);
+					afc_i2c_give(i2c_bus_id);
 				}
 
 				xDelay = 0;

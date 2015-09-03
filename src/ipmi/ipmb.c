@@ -140,7 +140,7 @@ static uint8_t i2c_output_buffer[32 + 1];
 //void Board_LED_Toggle(uint8_t LEDNumber);
 //int IPMB_I2C_EventHandler_done = 0;
 
-
+#if USE_FREERTOS == 1
 extern SemaphoreHandle_t ipmi_message_sent_sid;
 
 
@@ -158,6 +158,8 @@ void IPMB_I2C_EventHandler(I2C_ID_T id, I2C_EVENT_T event)
 
 
 }
+
+#endif
 
 static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 {

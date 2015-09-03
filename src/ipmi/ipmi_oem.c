@@ -19,7 +19,6 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "FreeRTOS.h"
 
 #include "ipmi_handlers.h"
@@ -33,22 +32,22 @@
 
 #include "ipmi_oem.h"
 #include <string.h>
+#include <afc/board_version.h>
 
-struct I2C_Mutex i2c_mutex_array[2];
+//struct I2C_Mutex i2c_mutex_array[2];
 SemaphoreHandle_t ssp1_mutex;
 static Chip_SSP_DATA_SETUP_T xf_setup;
 
 static uint8_t ssp_buffer[256];
-static uint32_t ssp_page= 0xffffffff ; //
+static uint32_t ssp_page = 0xffffffff; //
 
-static void ctrlSPI_CS( bool value);
-
+static void ctrlSPI_CS(uint8_t id, bool value);
 
 void SSP1_IRQHandler(void) {
- asm("nop");
+	asm("nop");
 }
 
-void EINT2_IRQHandler(void){
+void EINT2_IRQHandler(void) {
 	//LPC_GPIO[0].DIR |= 1UL << 6;
 	LPC_GPIO[0].CLR = 1UL << 6;
 	LPC_GPIO[0].SET = 1UL << 6;
@@ -61,7 +60,7 @@ void EINT2_IRQHandler(void){
 
 bool ssp_load_page(int32_t address) {
 	if ((ssp_page & 0xffffff00) != (address & 0xffffff00) || 1) {
-		SemaphoreHandle_t xSemaphore  = ssp1_mutex;
+		SemaphoreHandle_t xSemaphore = ssp1_mutex;
 		ssp_page = address & 0x00ffff00;
 		uint8_t tx_ssp_buffer[4];
 		tx_ssp_buffer[0] = 0x03;
@@ -76,7 +75,7 @@ bool ssp_load_page(int32_t address) {
 
 		if (xSemaphoreTake(xSemaphore, (TickType_t)100) == pdTRUE) {
 			Chip_SSP_SetMaster(LPC_SSP1, true);
-			ctrlSPI_CS(true);
+			ctrlSPI_CS(0, true);
 
 			// write command
 			xf_setup.tx_data = tx_ssp_buffer;
@@ -85,8 +84,7 @@ bool ssp_load_page(int32_t address) {
 			xf_setup.rx_cnt = 0;
 			xf_setup.length = 4;
 
-			Chip_SSP_RWFrames_Blocking(LPC_SSP1, & xf_setup);
-
+			Chip_SSP_RWFrames_Blocking(LPC_SSP1, &xf_setup);
 
 			// read part
 			xf_setup.tx_data = NULL;
@@ -95,15 +93,14 @@ bool ssp_load_page(int32_t address) {
 			xf_setup.rx_cnt = 0;
 			xf_setup.length = 256;
 
-			Chip_SSP_RWFrames_Blocking(LPC_SSP1, & xf_setup);
+			Chip_SSP_RWFrames_Blocking(LPC_SSP1, &xf_setup);
 
-			ctrlSPI_CS(false);
+			ctrlSPI_CS(0, false);
 			xSemaphoreGive(xSemaphore);
 		} else {
 			return false;
 		}
 	}
-
 
 }
 
@@ -112,18 +109,16 @@ void create_ssp1_mutex() {
 	xSemaphoreGive(ssp1_mutex);
 }
 
-
-
 void ipmi_afc_gpio(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	uint8_t port = req->msg_data[0];
 	uint8_t mode = req->msg_data[1];
 
 	if (mode == 0) {
 		// no change, get port status
-		uint32_t *ret_val = (uint32_t *)(&rsp->msg_data[0]);
+		uint32_t *ret_val = (uint32_t *) (&rsp->msg_data[0]);
 		ret_val[0] = Chip_GPIO_GetPortDIR(LPC_GPIO, port);
 		ret_val[1] = Chip_GPIO_GetPortValue(LPC_GPIO, port);
-		rsp->msg.data_len=8;
+		rsp->msg.data_len = 8;
 	} else {
 		uint8_t pin = req->msg_data[2];
 		if (mode == 1) {
@@ -139,25 +134,34 @@ void ipmi_afc_gpio(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 		}
 		rsp->msg_data[0] = Chip_GPIO_GetPinDIR(LPC_GPIO, port, pin);
 		rsp->msg_data[1] = Chip_GPIO_GetPinState(LPC_GPIO, port, pin);
-		rsp->msg.data_len=2;
+		rsp->msg.data_len = 2;
 	}
 
 	rsp->retcode = IPMI_CC_OK;
 
 }
 
-static void ctrlSPI_CS( bool value) {
-	if (value) {
-		Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, true);
-		Chip_GPIO_SetPinState(LPC_GPIO, 0, 6, false);
-	} else {
-		Chip_GPIO_SetPinState(LPC_GPIO, 0, 6, true);
-		Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, false);
+static void ctrlSPI_CS(uint8_t id, bool value) {
+	if (id == 0) {
+		if (value) {
+			Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, true);
+			Chip_GPIO_SetPinState(LPC_GPIO, 0, 6, false);
+		} else {
+			Chip_GPIO_SetPinState(LPC_GPIO, 0, 6, true);
+			Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, false);
+		}
+	} else if (id == 1) {
+		if (value) {
+			Chip_GPIO_SetPinDIR(LPC_GPIO, 1, 21, true);
+			Chip_GPIO_SetPinState(LPC_GPIO, 1, 21, false);
+		} else {
+			Chip_GPIO_SetPinState(LPC_GPIO, 1, 21, true);
+			Chip_GPIO_SetPinDIR(LPC_GPIO, 1, 21, false);
+		}
 	}
 }
 
-void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp)
-{
+void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 
 	uint8_t command = req->msg_data[0];
 	if (command == 0x02) { // program page
@@ -185,8 +189,7 @@ void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp)
 	uint8_t write_length = req->msg_data[0];
 	uint8_t read_length = req->msg_data[1];
 
-
-	SemaphoreHandle_t xSemaphore  = ssp1_mutex;
+	SemaphoreHandle_t xSemaphore = ssp1_mutex;
 	if (xSemaphoreTake(xSemaphore, (TickType_t)100) == pdTRUE) {
 		Chip_SSP_SetMaster(LPC_SSP1, true);
 		xf_setup.tx_data = &req->msg_data[2];
@@ -194,10 +197,9 @@ void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp)
 		xf_setup.tx_cnt = 0;
 		xf_setup.rx_cnt = 0;
 		xf_setup.length = write_length + read_length;
-		ctrlSPI_CS(true);
-		Chip_SSP_RWFrames_Blocking(LPC_SSP1, & xf_setup);
-		ctrlSPI_CS(false);
-
+		ctrlSPI_CS(0,true);
+		Chip_SSP_RWFrames_Blocking(LPC_SSP1, &xf_setup);
+		ctrlSPI_CS(0,false);
 
 		xSemaphoreGive(xSemaphore);
 	} else {
@@ -211,30 +213,76 @@ void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp)
 
 }
 
+void ipmi_afc_ssp_transfer_raw(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 
-void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp)
-{
+	uint8_t slave_id = req->msg_data[0];
+	if (slave_id >= 2) {
+		rsp->retcode = IPMI_CC_PARAM_OUT_OF_RANGE;
+		return;
+	}
+	uint8_t write_length = req->msg_data[1];
+	uint8_t read_length = req->msg_data[2];
+	SemaphoreHandle_t xSemaphore = ssp1_mutex;
+
+	if (xSemaphoreTake(xSemaphore, (TickType_t)100) == pdTRUE) {
+		Chip_SSP_SetMaster(LPC_SSP1, true);
+		ctrlSPI_CS(slave_id, true);
+
+		if (write_length != 0) {
+		xf_setup.tx_data = &req->msg_data[3];
+		xf_setup.rx_data = NULL;
+		xf_setup.tx_cnt = 0;
+		xf_setup.rx_cnt = 0;
+		xf_setup.length = write_length;
+		Chip_SSP_RWFrames_Blocking(LPC_SSP1, &xf_setup);
+		}
+
+		rsp->msg.data_len = 0;
+
+		if (read_length != 0) {
+			xf_setup.tx_data = NULL;
+			xf_setup.rx_data = &rsp->msg_data[0];
+			xf_setup.tx_cnt = 0;
+			xf_setup.rx_cnt = 0;
+			xf_setup.length = read_length;
+			Chip_SSP_RWFrames_Blocking(LPC_SSP1, &xf_setup);
+			rsp->msg.data_len = xf_setup.rx_cnt;
+		}
+
+		ctrlSPI_CS(slave_id, false);
+		Chip_SSP_SetMaster(LPC_SSP1, false);
+		rsp->retcode = IPMI_CC_OK;
+
+		xSemaphoreGive(xSemaphore);
+	} else {
+		rsp->retcode = IPMI_CC_TIMEOUT;
+		return;
+	}
+	return;
+}
+
+void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	uint8_t i2c_bus = req->msg_data[0];
 	int i2c_bus_id = 0;
+	I2C_ID_T i2c_interface;
 	switch (i2c_bus) {
-		case 0:
-			i2c_bus_id= 0; // I2C_FMC1
-			break;
-		case 1:
-			i2c_bus_id= 1; // I2C_FMC2
-			break;
-		case 2:
-			i2c_bus_id= 0; // I2C_CPU
-			break;
-		default:
-			i2c_bus_id= 0;
+	case 0:
+		i2c_bus_id = 0; // I2C_FMC1
+		break;
+	case 1:
+		i2c_bus_id = 1; // I2C_FMC2
+		break;
+	case 2:
+		i2c_bus_id = 0; // I2C_CPU
+		break;
+	default:
+		i2c_bus_id = 0;
 	}
 
 	uint8_t i2c_bytes_sent = 0;
 	uint8_t i2c_bytes_recv = 0;
 
-
-	I2C_XFER_T xfer = {0};
+	I2C_XFER_T xfer = { 0 };
 	xfer.slaveAddr = req->msg_data[1];
 	xfer.txBuff = &req->msg_data[4];
 	xfer.txSz = req->msg_data[2];
@@ -242,16 +290,18 @@ void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp)
 	xfer.rxSz = req->msg_data[3];
 
 
-	SemaphoreHandle_t xSemaphore  = i2c_mutex_array[i2c_bus_id].semaphore;
-	if (xSemaphoreTake(xSemaphore, (TickType_t)100) == pdTRUE) {
+	//SemaphoreHandle_t xSemaphore = i2c_mutex_array[i2c_bus_id].semaphore;
+	if (afc_i2c_take_by_busid(i2c_bus, &i2c_interface, (TickType_t)100) == pdTRUE) {
+
 		// reconfigure bus
+		/*
 		if (i2c_bus_id == 0 && i2c_bus == 0) {
 			Chip_I2C_Disable(i2c_mutex_array[i2c_bus_id].i2c_bus);
 
 			Chip_I2C_DeInit(i2c_mutex_array[i2c_bus_id].i2c_bus);
 
-			Chip_IOCON_PinMux(LPC_IOCON, 0,  0, IOCON_MODE_INACT, IOCON_FUNC0);
-			Chip_IOCON_PinMux(LPC_IOCON, 0,  1, IOCON_MODE_INACT, IOCON_FUNC0);
+			Chip_IOCON_PinMux(LPC_IOCON, 0, 0, IOCON_MODE_INACT, IOCON_FUNC0);
+			Chip_IOCON_PinMux(LPC_IOCON, 0, 1, IOCON_MODE_INACT, IOCON_FUNC0);
 			//Chip_IOCON_EnableOD(LPC_IOCON, 0,  0);
 			//Chip_IOCON_EnableOD(LPC_IOCON, 0,  1);
 
@@ -262,36 +312,39 @@ void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp)
 			Chip_I2C_Init(i2c_mutex_array[i2c_bus_id].i2c_bus);
 			Chip_I2C_Enable(i2c_mutex_array[i2c_bus_id].i2c_bus);
 
-
 		}
 
 		i2c_mutex_array[i2c_bus_id].start_time = xTaskGetTickCount();
-		while (Chip_I2C_MasterTransfer(i2c_mutex_array[i2c_bus_id].i2c_bus, &xfer) == I2C_STATUS_ARBLOST) {
+		*/
+
+		while (Chip_I2C_MasterTransfer(i2c_interface, &xfer) == I2C_STATUS_ARBLOST) {
 		}
 		i2c_bytes_sent = req->msg_data[2] - xfer.txSz;
 		i2c_bytes_recv = req->msg_data[3] - xfer.rxSz;
 
+		/*
 		if (i2c_bus_id == 0 && i2c_bus == 0) {
 			Chip_I2C_Disable(i2c_mutex_array[i2c_bus_id].i2c_bus);
 
 			Chip_I2C_DeInit(i2c_mutex_array[i2c_bus_id].i2c_bus);
 
-			Chip_IOCON_PinMux(LPC_IOCON, 0,  0, IOCON_MODE_INACT, IOCON_FUNC3);
-			Chip_IOCON_PinMux(LPC_IOCON, 0,  1, IOCON_MODE_INACT, IOCON_FUNC3);
-			Chip_IOCON_EnableOD(LPC_IOCON, 0,  0);
-			Chip_IOCON_EnableOD(LPC_IOCON, 0,  1);
+			Chip_IOCON_PinMux(LPC_IOCON, 0, 0, IOCON_MODE_INACT, IOCON_FUNC3);
+			Chip_IOCON_PinMux(LPC_IOCON, 0, 1, IOCON_MODE_INACT, IOCON_FUNC3);
+			Chip_IOCON_EnableOD(LPC_IOCON, 0, 0);
+			Chip_IOCON_EnableOD(LPC_IOCON, 0, 1);
 
 			Chip_IOCON_PinMux(LPC_IOCON, 0, 19, IOCON_MODE_INACT, IOCON_FUNC0);
 			Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC0);
-		//Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
-		//Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
+			//Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
+			//Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
 
 			Chip_I2C_Init(i2c_mutex_array[i2c_bus_id].i2c_bus);
 			Chip_I2C_Enable(i2c_mutex_array[i2c_bus_id].i2c_bus);
 		}
+		*/
 
-
-		xSemaphoreGive(i2c_mutex_array[i2c_bus_id].semaphore);
+		afc_i2c_give(i2c_bus_id);
+		//xSemaphoreGive(i2c_mutex_array[i2c_bus_id].semaphore);
 
 	} else {
 		asm("nop");
