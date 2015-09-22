@@ -61,19 +61,20 @@
 #define CHIP_ID_RTC_EEPROM 7
 #define CHIP_ID_EEPROM 8
 #define CHIP_ID_EEPROM_ID 9
+#define CHIP_ID_EEPROM_PSWP 10
 
-#define CHIP_ID_INA_0 10
-#define CHIP_ID_INA_1 11
-#define CHIP_ID_INA_2 12
-#define CHIP_ID_INA_3 13
-#define CHIP_ID_INA_4 14
-#define CHIP_ID_INA_5 15
+#define CHIP_ID_INA_0 11
+#define CHIP_ID_INA_1 12
+#define CHIP_ID_INA_2 13
+#define CHIP_ID_INA_3 14
+#define CHIP_ID_INA_4 15
+#define CHIP_ID_INA_5 16
 
-#define CHIP_ID_ADN 16
-#define CHIP_ID_SI57x 17
+#define CHIP_ID_ADN 17
+#define CHIP_ID_SI57x 18
 
-#define CHIP_ID_EEPROM_FMC1 18
-#define CHIP_ID_EEPROM_FMC2 19
+#define CHIP_ID_EEPROM_FMC1 19
+#define CHIP_ID_EEPROM_FMC2 20
 
 
 

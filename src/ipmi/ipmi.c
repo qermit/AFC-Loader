@@ -132,6 +132,10 @@ void IPMI_init(){
 	free_msg_queue = xQueueCreate(IPMI_BUFF_COUNT, sizeof(struct ipmi_msg*));
 	req_msg_queue = xQueueCreate(IPMI_BUFF_COUNT, sizeof(struct ipmi_msg*));
 	event_queue_id = xQueueCreate(IPMI_BUFF_COUNT, sizeof(struct ipmi_msg*));
+	vQueueAddToRegistry(free_msg_queue, "free_msg_queue");
+	vQueueAddToRegistry(req_msg_queue, "req_msg_queue");
+	vQueueAddToRegistry(event_queue_id, "event_queue_id");
+
 	ipmi_message_sent_sid = xSemaphoreCreateBinary();
 	ipmi_message_recvd_sid = xSemaphoreCreateBinary();
 	for (i=0;i<IPMI_BUFF_COUNT; i++) {

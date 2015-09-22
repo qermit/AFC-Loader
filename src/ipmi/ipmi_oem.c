@@ -47,11 +47,25 @@ void SSP1_IRQHandler(void) {
 }
 
 void EINT2_IRQHandler(void) {
-	//LPC_GPIO[0].DIR |= 1UL << 6;
-	LPC_GPIO[0].CLR = 1UL << 6;
-	LPC_GPIO[0].SET = 1UL << 6;
-	//LPC_GPIO[0].DIR &= ~(1UL << 6);
-	LPC_GPIO[0].DIR |= 1UL << 6;
+	NVIC_DisableIRQ(EINT2_IRQn);
+
+			struct ipmi_msg *pmsg = IPMI_alloc();
+		    struct ipmi_ipmb_addr *dst_addr = &pmsg->daddr;
+		    struct ipmi_ipmb_addr *src_addr = &pmsg->saddr;
+
+		    IPMI_evet_get_address(src_addr, dst_addr);
+
+		    pmsg->msg.lun = 0;
+		    pmsg->msg.netfn = NETFN_SE;
+		    pmsg->msg.cmd = IPMI_PLATFORM_EVENT_CMD;
+		    int data_len = 0;
+		    pmsg->msg_data[data_len++] = 0x04;
+		    pmsg->msg_data[data_len++] = 0xf2;
+		    pmsg->msg_data[data_len++] = 0;
+		    pmsg->msg_data[data_len++] = 0x6f;
+		    pmsg->msg_data[data_len++] = 0x00; // hot swap state, handle closed
+		    pmsg->msg.data_len = data_len;
+		    IPMI_event_queue_append(pmsg);
 
 	LPC_SYSCON->EXTINT |= 1UL << 2;
 	NVIC_ClearPendingIRQ(EINT2_IRQn);

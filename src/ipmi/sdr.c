@@ -646,6 +646,7 @@ void vTaskSensor( void *pvParmeters )
 				}
 
 				if (new_flag != old_flag) {
+					/* todo add allocation check */
 	    		    struct ipmi_msg *pmsg = IPMI_alloc();
 	    		    struct ipmi_ipmb_addr *dst_addr =(struct ipmi_ipmb_addr *) &pmsg->daddr;
 	    		    struct ipmi_ipmb_addr *src_addr =(struct ipmi_ipmb_addr *) &pmsg->saddr;

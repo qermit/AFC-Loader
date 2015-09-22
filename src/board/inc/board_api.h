@@ -178,6 +178,7 @@ typedef void (*p_msDelay_func_t)(uint32_t);
 
 #else
 #define DEBUGINIT()
+#define DEBUGOUT_IPMB(...)
 #define DEBUGOUT(...)
 #define DEBUGSTR(str)
 #define DEBUGIN() (int) EOF

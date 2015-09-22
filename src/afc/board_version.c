@@ -124,6 +124,7 @@ struct i2c_chip_mapping i2c_chip_map[] = {
 		{CHIP_ID_RTC_EEPROM, I2C_BUS_CPU_ID, 0x57},
 		{CHIP_ID_EEPROM,     I2C_BUS_CPU_ID, 0x50},
 		{CHIP_ID_EEPROM_ID,  I2C_BUS_CPU_ID, 0x58},
+		{CHIP_ID_EEPROM_PSWP,I2C_BUS_CPU_ID, 0x30},
 
 		{CHIP_ID_INA_0,      I2C_BUS_CPU_ID, 0x40},
 		{CHIP_ID_INA_1,      I2C_BUS_CPU_ID, 0x41},
@@ -133,7 +134,7 @@ struct i2c_chip_mapping i2c_chip_map[] = {
 		{CHIP_ID_INA_5,      I2C_BUS_CPU_ID, 0x45},
 
 		{CHIP_ID_ADN,	     I2C_BUS_CLOCK_ID, 0x4B},
-		{CHIP_ID_SI57x,		 I2C_BUS_CLOCK_ID, 0x30},
+		{CHIP_ID_SI57x,		 I2C_BUS_CLOCK_ID, 0x55},
 
 		{CHIP_ID_EEPROM_FMC1,	     I2C_BUS_FMC1_ID, 0x4B},
 		{CHIP_ID_EEPROM_FMC2,		 I2C_BUS_FMC2_ID, 0x30},
