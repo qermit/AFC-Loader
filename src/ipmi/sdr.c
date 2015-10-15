@@ -387,7 +387,7 @@ size_t sdr_get_size_by_entry(int id){
 
 static unsigned short reservationID;
 
-void ipmi_se_get_sdr_info(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_se_get_sdr_info, NETFN_SE, IPMI_GET_DEVICE_SDR_INFO_CMD, struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	int len = rsp->msg.data_len;
 
 	if (req->msg.data_len == 0 || req->msg_data[0] == 0) {
@@ -421,7 +421,7 @@ void do_quiesced(unsigned char ctlcode){
 	xSemaphoreGive(semaphore_fru_control);
 }
 
-void ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_se_get_sdr, NETFN_SE, IPMI_GET_DEVICE_SDR_CMD, struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	struct ipmi_se_get_sdr_param * params;
 	params = (struct ipmi_se_get_sdr_param *) req->msg_data;
 	//unsigned short test = params->
@@ -481,8 +481,7 @@ void ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 
 }
 
-void ipmi_se_reserve_device_sdr(struct ipmi_msg *req,
-		struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_se_reserve_device_sdr, NETFN_SE, IPMI_RESERVE_DEVICE_SDR_REPOSITORY_CMD, struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	int len = rsp->msg.data_len;
 
 	reservationID++;
@@ -498,8 +497,7 @@ void ipmi_se_reserve_device_sdr(struct ipmi_msg *req,
 
 // NETFN_SE = 0x04,
 // IPMI_GET_SENSOR_READING_CMD = 0x2d,
-void ipmi_se_get_sensor_reading(struct ipmi_msg *req,
-		struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_se_get_sensor_reading, NETFN_SE, IPMI_GET_SENSOR_READING_CMD, struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	int sensor_number = req->msg_data[0];
 	int sensor_data_index = req->msg_data[0];
 	int len = rsp->msg.data_len;

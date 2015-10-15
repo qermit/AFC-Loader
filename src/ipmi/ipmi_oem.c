@@ -69,8 +69,8 @@ void EINT2_IRQHandler(void) {
 
 	LPC_SYSCON->EXTINT |= 1UL << 2;
 	NVIC_ClearPendingIRQ(EINT2_IRQn);
-}
 
+}
 bool ssp_load_page(int32_t address) {
 	if ((ssp_page & 0xffffff00) != (address & 0xffffff00) || 1) {
 		SemaphoreHandle_t xSemaphore = ssp1_mutex;
@@ -122,7 +122,7 @@ void create_ssp1_mutex() {
 	xSemaphoreGive(ssp1_mutex);
 }
 
-void ipmi_afc_gpio(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_afc_gpio, NETFN_CUSTOM_AFC, IPMI_AFC_CMD_GPIO, struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	uint8_t port = req->msg_data[0];
 	uint8_t mode = req->msg_data[1];
 
@@ -174,7 +174,7 @@ static void ctrlSPI_CS(uint8_t id, bool value) {
 	}
 }
 
-void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_afc_ssp_transfer, NETFN_CUSTOM_AFC, IPMI_AFC_CMD_SSP_TRANSFER, struct ipmi_msg *req, struct ipmi_msg* rsp) {
 
 	uint8_t command = req->msg_data[0];
 	if (command == 0x02) { // program page
@@ -226,7 +226,7 @@ void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 
 }
 
-void ipmi_afc_ssp_transfer_raw(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_afc_ssp_transfer_raw, NETFN_CUSTOM_AFC, IPMI_AFC_CMD_SSP_TRANSFER_RAW, struct ipmi_msg *req, struct ipmi_msg* rsp) {
 
 	uint8_t slave_id = req->msg_data[0];
 	if (slave_id >= 2) {
@@ -274,7 +274,7 @@ void ipmi_afc_ssp_transfer_raw(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	return;
 }
 
-void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_afc_i2c_transfer, NETFN_CUSTOM_AFC, IPMI_AFC_CMD_I2C_TRANSFER, struct ipmi_msg *req, struct ipmi_msg* rsp) {
 	uint8_t i2c_bus = req->msg_data[0];
 	I2C_ID_T i2c_interface;
 
