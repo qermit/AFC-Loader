@@ -154,13 +154,13 @@ typedef struct {
 
 } sensor_data_entry_t;
 
-void ipmi_se_get_sdr_info(struct ipmi_msg *req, struct ipmi_msg* rsp);
-void ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);
-void ipmi_se_get_sensor_reading(struct ipmi_msg *req, struct ipmi_msg* rsp);
+//void ipmi_se_get_sdr_info(struct ipmi_msg *req, struct ipmi_msg* rsp);
+//void ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);
+//void ipmi_se_get_sensor_reading(struct ipmi_msg *req, struct ipmi_msg* rsp);
 
 
 
-void ipmi_se_reserve_device_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);
+//void ipmi_se_reserve_device_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp);
 
 void initializeDCDC();
 

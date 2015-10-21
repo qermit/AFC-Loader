@@ -44,10 +44,10 @@ struct I2C_Mutex {
 
 void create_ssp1_mutex();
 
-void ipmi_afc_gpio(struct ipmi_msg *req, struct ipmi_msg* rsp);
-void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp);
-void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp);
-void ipmi_afc_ssp_transfer_raw(struct ipmi_msg *req, struct ipmi_msg* rsp);
+//void ipmi_afc_gpio(struct ipmi_msg *req, struct ipmi_msg* rsp);
+//void ipmi_afc_i2c_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp);
+//void ipmi_afc_ssp_transfer(struct ipmi_msg *req, struct ipmi_msg* rsp);
+//void ipmi_afc_ssp_transfer_raw(struct ipmi_msg *req, struct ipmi_msg* rsp);
 
 
 #endif /* IPMI_IPMI_OEM_H_ */

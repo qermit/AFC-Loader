@@ -20,13 +20,18 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 #include "board.h"
+
+
 
 #include "ipmb.h"
 #include "ipmi.h"
 #include "board_api.h"
+#include <asf.h>
 
-#if USE_FREERTOS == 1
+
+#if USE_FREERTOS
 #warning "MMC Verion"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -152,7 +157,7 @@ void IPMB_I2C_EventHandler(I2C_ID_T id, I2C_EVENT_T event)
 	if (event == I2C_EVENT_DONE) {
 		xHigherPriorityTaskWoken = pdFALSE;
 		xSemaphoreGiveFromISR(ipmi_message_sent_sid, &xHigherPriorityTaskWoken);
-		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+		//portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 		 //ipmi_message_sent_sid
 	}
 
@@ -160,6 +165,46 @@ void IPMB_I2C_EventHandler(I2C_ID_T id, I2C_EVENT_T event)
 }
 
 #endif
+
+TWI_Slave_t slave;
+char readBuffer[24] ;
+void IPMB_event_done() {
+	struct ipmi_msg * p_ipmi_req = NULL;
+	uint8_t decode_result = -1;
+	p_ipmi_req = IPMI_alloc_fromISR();
+	uint8_t i;
+	
+	//if (slave.status != TWIS_STATUS_READY)  return;
+	if (slave.result != TWIS_RESULT_OK)  return;
+	
+	seep_data[0] = slave.slave_address;
+	
+	
+	if (p_ipmi_req != NULL)
+			decode_result = ipmb_decode(p_ipmi_req, seep_data, slave.bytesReceived+1);
+	
+	Board_LED_Toggle(2);		
+		if (decode_result == 0) {
+			if (p_ipmi_req->msg.netfn & 0x01) {
+				// handle response, not expecting any response
+				// @todo: event response handling for standard mmc code
+				#ifdef FREERTOS_CONFIG_H
+				//IPMI_free_fromISR(p_ipmi_req);
+				IPMI_put_event_response(p_ipmi_req);
+				#else
+				IPMI_free_fromISR(p_ipmi_req);
+				#endif
+			} else {
+				// handle request
+				if (IPMI_req_queue_append_fromISR(p_ipmi_req)  != 0) {
+					IPMI_free_fromISR(p_ipmi_req);
+				} 
+			}
+		} else {
+			IPMI_free_fromISR(p_ipmi_req);
+		}
+
+}
 
 static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 {
@@ -219,15 +264,22 @@ static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 	}
 }
 
+ISR(TWIC_TWIS_vect)
+{
+	TWI_SlaveInterruptHandler(&slave);
+}
 
 unsigned char IPMB_slave_addr;
 
 /* Simulate an I2C EEPROM slave */
 unsigned char IPMB_init(I2C_ID_T id)
 {
+	twi_options_t m_options;
 	memset(seep_data, 0xFF, I2C_SLAVE_EEPROM_SIZE);
-
+    sysclk_enable_peripheral_clock(&TWIC);
+	
 	IPMB_slave_addr = ipmb_get_GA();
+	IPMB_slave_addr = 0x76;
 	seep_xfer.slaveAddr = IPMB_slave_addr;
 
 	seep_xfer.txBuff = &seep_data[1];
@@ -235,10 +287,25 @@ unsigned char IPMB_init(I2C_ID_T id)
 	seep_xfer.txSz = seep_xfer.rxSz = sizeof(seep_data) - 1;
 	seep_xfer.rxSz = 32;
 
-	Chip_I2C_SlaveSetup(id, I2C_SLAVE_0, &seep_xfer, IPMB_events, 0);
+	slave.receivedData = &seep_data[1];
+	slave.slave_address = IPMB_slave_addr;
+
+    TWI_SlaveInitializeDriver(&slave, &TWIC, *IPMB_event_done);
+    TWI_SlaveInitializeModule(&slave, IPMB_slave_addr >> 1,TWI_SLAVE_INTLVL_MED_gc);
+
+	m_options.speed     = 100000;
+	m_options.chip      = IPMB_slave_addr >> 1;
+	m_options.speed_reg = TWI_BAUD(sysclk_get_cpu_hz(), 100000);
+
+	
+	twi_master_init(&TWIC, &m_options);
+	twi_master_enable(&TWIC);
+
+	//Chip_I2C_SlaveSetup(id, I2C_SLAVE_0, &seep_xfer, IPMB_events, 0);
 #ifdef FREERTOS_CONFIG_H
-	if (id == I2C0)
-		Chip_I2C_SetMasterEventHandler(id, IPMB_I2C_EventHandler);
+//	if (id == I2C0)
+//		Chip_I2C_SetMasterEventHandler(id, IPMB_I2C_EventHandler);
+    
 #endif
 	return IPMB_slave_addr;
 }
@@ -265,9 +332,9 @@ void IPMB_send(struct ipmi_msg * msg) {
 	tmp_xfer.txSz = length -1;
 	tmp_xfer.rxSz = 0;
 #ifdef FREERTOS_CONFIG_H
-	Chip_I2C_MasterTransferXfer(I2C0, &tmp_xfer);
+	//Chip_I2C_MasterTransferXfer(I2C0, &tmp_xfer);
 #else
-	Chip_I2C_MasterTransfer(I2C0, &tmp_xfer);
+	//Chip_I2C_MasterTransfer(I2C0, &tmp_xfer);
 #endif
 //	Board_LED_Set(1,0);
 
@@ -315,35 +382,34 @@ uint8_t ipmb_get_GA( void )
     uint8_t address = IPMBL_TABLE[0];
 
     /* Clar the test pin and read all GA pins */
-    Chip_GPIO_SetPinDIR(LPC_GPIO, GA_TEST_PORT, GA_TEST_PIN, true);
-    Chip_GPIO_SetPinState(LPC_GPIO, GA_TEST_PORT, GA_TEST_PIN, 1);
+	#warning "spawdzic jak to zrobic"
+	ioport_set_pin_mode(PIN_GA_TEST,  IOPORT_DIR_OUTPUT| IOPORT_INIT_HIGH);
+	ioport_set_pin_high(PIN_GA_TEST);
+	ioport_set_pin_mode(PIN_GA0,  IOPORT_DIR_INPUT);
+	ioport_set_pin_mode(PIN_GA1,  IOPORT_DIR_INPUT);
+	ioport_set_pin_mode(PIN_GA2,  IOPORT_DIR_INPUT);
 
-    Chip_GPIO_SetPinDIR(LPC_GPIO, GA0_PORT, GA0_PIN, false);
-    Chip_GPIO_SetPinDIR(LPC_GPIO, GA1_PORT, GA1_PIN, false);
-    Chip_GPIO_SetPinDIR(LPC_GPIO, GA2_PORT, GA2_PIN, false);
 
-
-
-    ga0 = Chip_GPIO_GetPinState(LPC_GPIO, GA0_PORT, GA0_PIN);
-    ga1 = Chip_GPIO_GetPinState(LPC_GPIO, GA1_PORT, GA1_PIN);
-    ga2 = Chip_GPIO_GetPinState(LPC_GPIO, GA2_PORT, GA2_PIN);
-
+	ga0 = ioport_get_pin_level(PIN_GA0);
+	ga1 = ioport_get_pin_level(PIN_GA1);
+	ga2 = ioport_get_pin_level(PIN_GA2);
+	
     /* Set the test pin and see if any GA pin has changed is value,
      * meaning that it is unconnected */
-    Chip_GPIO_SetPinState(LPC_GPIO, GA_TEST_PORT, GA_TEST_PIN, 0);
+	ioport_set_pin_low(PIN_GA_TEST);
     for(i=0; i<100; i++); {asm("nop");}
 
-    if ( ga0 != Chip_GPIO_GetPinState(LPC_GPIO, GA0_PORT, GA0_PIN) )
+    if ( ga0 != ioport_get_pin_level(PIN_GA0) )
     {
         ga0 = UNCONNECTED;
     }
 
-    if ( ga1 != Chip_GPIO_GetPinState(LPC_GPIO, GA1_PORT, GA1_PIN) )
+    if ( ga1 != ioport_get_pin_level(PIN_GA1) )
     {
         ga1 = UNCONNECTED;
     }
 
-    if ( ga2 != Chip_GPIO_GetPinState(LPC_GPIO, GA2_PORT, GA2_PIN) )
+    if ( ga2 != ioport_get_pin_level(PIN_GA2) )
     {
         ga2 = UNCONNECTED;
     }

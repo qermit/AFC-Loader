@@ -54,16 +54,16 @@
 
 
 // known netFn codes (even request codes only)
-#define NETFN_CHASSIS						(0x00)
-#define NETFN_BRIDGE						(0x02)
-#define NETFN_SE							(0x04)		// sensor/event netFN
-#define NETFN_APP							(0x06)		// application netFN
-#define NETFN_FIRMWARE						(0x08)
-#define NETFN_STORAGE						(0x0a)
-#define NETFN_TRANSPORT						(0x0c)
-#define NETFN_GRPEXT						(0x2c)		// group extension, for PICMG, first data byte = 0x00
-#define NETFN_CUSTOM						(0x32)		// custom extension for UWHEP MMC functions
-#define NETFN_CUSTOM_AFC					(0x30)		// custom extension for UWHEP MMC functions
+#define NETFN_CHASSIS						0x00
+#define NETFN_BRIDGE						0x02
+#define NETFN_SE							0x04		// sensor/event netFN
+#define NETFN_APP							0x06		// application netFN
+#define NETFN_FIRMWARE						0x08
+#define NETFN_STORAGE						0x0a
+#define NETFN_TRANSPORT						0x0c
+#define NETFN_GRPEXT						0x2c		// group extension, for PICMG, first data byte = 0x00
+#define NETFN_CUSTOM						0x32		// custom extension for UWHEP MMC functions
+#define NETFN_CUSTOM_AFC					0x30		// custom extension for UWHEP MMC functions
 
 
 // IPMI commands
@@ -361,6 +361,18 @@ typedef struct ipmiFuncEntry {
 	unsigned char cmd;
 	ipmiProcessFunc process;
 } ipmiFuncEntry_t;
+
+
+extern const ipmiFuncEntry_t _ipmi_handlers;
+extern const ipmiFuncEntry_t _eipmi_handlers;
+
+#define IPMI_HANDLER_ALIAS(handler_fn, netfn_id, cmd_id) \
+const ipmiFuncEntry_t  __attribute__ ((section (".ipmi_handlers"))) ipmi_handler_##netfn_id##__##cmd_id##_s = { .process = handler_fn , .netfn = netfn_id, .cmd = cmd_id }
+
+#define IPMI_HANDLER(name, netfn_id, cmd_id, args...) \
+void ipmi_handler_##netfn_id##__##cmd_id##_f(args); \
+const ipmiFuncEntry_t  __attribute__ ((section (".ipmi_handlers"))) ipmi_handler_##netfn_id##__##cmd_id##_s = { .process = ipmi_handler_##netfn_id##__##cmd_id##_f , .netfn = netfn_id, .cmd = cmd_id }; \
+void ipmi_handler_##netfn_id##__##cmd_id##_f(args)
 
 
 typedef struct __attribute__((__packed__)) fru_common_header {

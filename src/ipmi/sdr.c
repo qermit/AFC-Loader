@@ -23,6 +23,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
+#include "freertos_private.h"
 
 #include "board.h"
 #include "ipmi_oem.h"
@@ -387,7 +388,8 @@ size_t sdr_get_size_by_entry(int id){
 
 static unsigned short reservationID;
 
-void ipmi_se_get_sdr_info(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_se_get_sdr_info, NETFN_SE, IPMI_GET_DEVICE_SDR_INFO_CMD, struct ipmi_msg *req, struct ipmi_msg* rsp) 
+{
 	int len = rsp->msg.data_len;
 
 	if (req->msg.data_len == 0 || req->msg_data[0] == 0) {
@@ -421,7 +423,8 @@ void do_quiesced(unsigned char ctlcode){
 	xSemaphoreGive(semaphore_fru_control);
 }
 
-void ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_se_get_sdr, NETFN_SE, IPMI_GET_DEVICE_SDR_CMD, struct ipmi_msg *req, struct ipmi_msg* rsp) 
+{
 	struct ipmi_se_get_sdr_param * params;
 	params = (struct ipmi_se_get_sdr_param *) req->msg_data;
 	//unsigned short test = params->
@@ -481,8 +484,9 @@ void ipmi_se_get_sdr(struct ipmi_msg *req, struct ipmi_msg* rsp) {
 
 }
 
-void ipmi_se_reserve_device_sdr(struct ipmi_msg *req,
-		struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_se_reserve_device_sdr, NETFN_SE, IPMI_RESERVE_DEVICE_SDR_REPOSITORY_CMD, struct ipmi_msg *req, struct ipmi_msg* rsp) 
+{
+
 	int len = rsp->msg.data_len;
 
 	reservationID++;
@@ -498,8 +502,8 @@ void ipmi_se_reserve_device_sdr(struct ipmi_msg *req,
 
 // NETFN_SE = 0x04,
 // IPMI_GET_SENSOR_READING_CMD = 0x2d,
-void ipmi_se_get_sensor_reading(struct ipmi_msg *req,
-		struct ipmi_msg* rsp) {
+IPMI_HANDLER(ipmi_se_get_sensor_reading, NETFN_SE, IPMI_GET_SENSOR_READING_CMD, struct ipmi_msg *req, struct ipmi_msg* rsp) 
+{
 	int sensor_number = req->msg_data[0];
 	int sensor_data_index = req->msg_data[0];
 	int len = rsp->msg.data_len;
@@ -563,12 +567,12 @@ static void INA222_init(I2C_ID_T i2c, uint8_t address)
 	ch[0] = 0 ; // INA220_CFG_REG
 	ch[1] = 0x01;
 	ch[2] = 0x9f;
-	Chip_I2C_MasterSend(i2c, address, ch, 3);
+	//Chip_I2C_MasterSend(i2c, address, ch, 3);
 }
 
 static uint16_t INA222_readVolt(I2C_ID_T i2c, uint8_t address, bool raw) {
 	uint8_t ch[2];
-	Chip_I2C_MasterCmdRead(i2c, address, INA220_BUS_REG, ch, 2);
+	//Chip_I2C_MasterCmdRead(i2c, address, INA220_BUS_REG, ch, 2);
 	uint16_t tmpVal = 0.0;
 	tmpVal = (0x1fE0 & (ch[0] << 5)) | (0x1f & (ch[1] >> 3));
 	if (raw == false)
@@ -586,6 +590,13 @@ void vTaskSensor( void *pvParmeters )
     sensor_data_entry_t * pDATA;
     I2C_ID_T i2c_bus_id;
     uint8_t i2c_address;
+	
+	struct afc_generic_task_param *xParams = (struct afc_generic_task_param *) pvParmeters;
+		
+	while(xSemaphoreTake(xParams->afc_init_semaphore, portMAX_DELAY) == pdFALSE ) {
+			asm("nop");
+	}
+	xSemaphoreGive(xParams->afc_init_semaphore);
 
 	if (afc_i2c_take_by_chipid(CHIP_ID_INA_0, &i2c_address,&i2c_bus_id, (TickType_t) 0 ) == pdTRUE ) {
 		INA222_init(i2c_bus_id, i2c_address);
@@ -633,16 +644,16 @@ void vTaskSensor( void *pvParmeters )
 			pDATA = sensor_array[i].data;
 			if (pSDR->sensornum == HOT_SWAP_SENSOR) {
 				//{ 2, 13, IOCON_MODE_INACT | IOCON_FUNC0 }, /* MOD HANDLE */
-				bool tmp_val = Chip_GPIO_GetPinState(LPC_GPIO, 2, 13);
+				bool tmp_val = ioport_get_pin_level(PIN_HOT_SWAP_HANDLE);
 				uint8_t new_flag = 0;
 				uint8_t old_flag = pDATA->comparator_status & 0x03;
 
 				if (tmp_val) {
 					// handle opened
-					new_flag = HOT_SWAP_STATE_HANDLE_OPENED;
+					new_flag = HOT_SWAP_STATE_HANDLE_CLOSED;
 				} else {
 					// handle closed
-					new_flag = HOT_SWAP_STATE_HANDLE_CLOSED;
+					new_flag = HOT_SWAP_STATE_HANDLE_OPENED;
 				}
 
 				if (new_flag != old_flag) {

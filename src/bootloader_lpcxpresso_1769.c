@@ -20,13 +20,13 @@
  */
 
 
-#if defined (__USE_LPCOPEN)
-#if defined(NO_BOARD_LIB)
-#include "chip.h"
-#else
+//#if defined (__USE_LPCOPEN)
+//#if defined(NO_BOARD_LIB)
+//#include "chip.h"
+//#else
 #include "board.h"
-#endif
-#endif
+//#endif
+//#endif
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #error __BYTE_ORDER__
@@ -34,10 +34,11 @@
 #endif
 
 
-#include <cr_section_macros.h>
-#include <stdio.h>
+/*#include <cr_section_macros.h>*/
 #include <string.h>
 #include <stdint.h>
+#include "board.h"
+
 #include "ipmi/ipmi.h"
 #include "ipmi/ipmb.h"
 #include "ipmi/sdr.h"
@@ -46,11 +47,14 @@
 #include "ipmi/payload.h"
 #include "afc/board_version.h"
 
-#ifdef USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 #warning "MMC Verion"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
+
+#include "freertos_private.h"
+
 #else
 #warning "BOOTLOADER Verion"
 #endif
@@ -59,18 +63,61 @@
 
 #ifdef FREERTOS_CONFIG_H
 
+
+static const ipmiFuncEntry_t const  __attribute__ ((section (".ipmi_handlers"))) ipmiEntries[] = {
+// 		{ NETFN_APP,     IPMI_GET_DEVICE_ID_CMD, ipmi_get_device_id},
+// 		{ NETFN_GRPEXT,  IPMI_PICMG_CMD_GET_PROPERTIES, ipmi_picmg_get_PROPERTIES},
+// 		{ NETFN_GRPEXT,  IPMI_PICMG_CMD_FRU_CONTROL, ipmi_picmg_cmd_fru_control},
+// 		{ NETFN_GRPEXT,  IPMI_PICMG_CMD_SET_FRU_LED_STATE, ipmi_picmg_set_fru_led_state},
+// 		{ NETFN_GRPEXT,  IPMI_PICMG_CMD_GET_DEVICE_LOCATOR_RECORD, ipmi_picmg_get_device_locator_record},
+		//{ NETFN_GRPEXT,  IPMI_PICMG_CMD_SET_AMC_PORT_STATE, ipmi_picmg_cmd_set_amc_port_state },
+		//{ NETFN_GRPEXT,  IPMI_PICMG_CMD_GET_TELCO_ALARM_CAPABILITY, ipmi_picmg_cmd_get_telco_alarm_capability},
+		/*{ NETFN_SE,      IPMI_SET_EVENT_RECEIVER_CMD, ipmi_se_set_event_reciever},*/
+//		{ NETFN_SE,      IPMI_GET_DEVICE_SDR_INFO_CMD, ipmi_se_get_sdr_info},
+// 		{ NETFN_SE,      IPMI_GET_DEVICE_SDR_CMD, ipmi_se_get_sdr},
+// 		{ NETFN_SE,		 IPMI_GET_SENSOR_READING_CMD, ipmi_se_get_sensor_reading},
+// 		{ NETFN_SE,      IPMI_RESERVE_DEVICE_SDR_REPOSITORY_CMD, ipmi_se_reserve_device_sdr},
+
+// 		{ NETFN_STORAGE, IPMI_GET_FRU_INVENTORY_AREA_INFO_CMD, ipmi_storage_get_fru_info},
+// 		{ NETFN_STORAGE, IPMI_READ_FRU_DATA_CMD, ipmi_storage_read_fru_data_cmd},
+// 		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_I2C_TRANSFER, ipmi_afc_i2c_transfer},
+// 		//{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_GPIO, ipmi_afc_gpio},
+// 		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_SSP_TRANSFER, ipmi_afc_ssp_transfer},
+ 		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_SSP_TRANSFER_RAW, NULL},
+};
+
 void LEDTask( void *pvParmeters )
 {
 TickType_t xLastWakeTime;
+		struct afc_generic_task_param *xParams = (struct afc_generic_task_param *) pvParmeters;
 
+/*		
+		while(xSemaphoreTake(xParams->afc_init_semaphore, portMAX_DELAY) == pdFALSE ) {
+			asm("nop");
+		}*/
+		xSemaphoreGive(xParams->afc_init_semaphore);
+		
     xLastWakeTime = xTaskGetTickCount();
-
+	const ipmiFuncEntry_t *  p_ptr;
+	p_ptr = (ipmiFuncEntry_t *) &_ipmi_handlers;
+	
+	ipmiFuncEntry_t current_entry;
+	int i = 0;
+	current_entry.cmd = ipmiEntries[i].cmd;
+	
     for( ;; )
     {
-        // Wait for the next cycle.
+				
+	
+		memcpy_P(&current_entry, p_ptr, sizeof(current_entry));
+		// Wait for the next cycle.
         vTaskDelayUntil( &xLastWakeTime, DELAY_PERIOD );
         Board_LED_Toggle(0);
        // Board_LED_Toggle(2);
+	   p_ptr++;
+	   if (p_ptr >= (ipmiFuncEntry_t *) &_eipmi_handlers){
+		   p_ptr = (ipmiFuncEntry_t *) &_ipmi_handlers;
+	   }
     }
 }
 #endif
@@ -79,14 +126,14 @@ TickType_t xLastWakeTime;
 /* State machine handler for I2C0 and I2C1 */
 static void i2c_state_handling(I2C_ID_T id)
 {
-	if (Chip_I2C_IsMasterActive(id)) {
+	//if (Chip_I2C_IsMasterActive(id)) {
 		//Board_LED_Toggle(1);
 
-		Chip_I2C_MasterStateHandler(id);
-	} else {
+		//Chip_I2C_MasterStateHandler(id);
+	//} else {
 		//Board_LED_Toggle(2);
-		Chip_I2C_SlaveStateHandler(id);
-	}
+		//Chip_I2C_SlaveStateHandler(id);
+	//}
 }
 
 /**
@@ -113,41 +160,27 @@ void I2C2_IRQHandler(void)
 }
 
 
-
-
-static void delay(  ) {
-uint16_t i = 0;
-uint8_t z = 0;
-
-	for(i=0; i<20000; i++)
-	{
-		for(z=0; z<100; z++)
-		{
-
-		}
-	}
-
-}
-
 void reset_FPGA(void)
 {
+	/*
 	Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, true);
 	Chip_GPIO_SetPinState(LPC_GPIO, 0, 6, false );
 	delay(  );
 	Chip_GPIO_SetPinState(LPC_GPIO, 0, 6, true );
 	Chip_GPIO_SetPinDIR(LPC_GPIO, 0, 6, false);
+	*/
 }
 
 
 
-
+SemaphoreHandle_t afc_init_semaphore;
 
 int main(void) {
-	__disable_irq();
+	cpu_irq_disable();
 #if defined (__USE_LPCOPEN)
 #if !defined(NO_BOARD_LIB)
     // Read clock settings and update SystemCoreClock variable
-    SystemCoreClockUpdate();
+    //SystemCoreClockUpdate();
     // Set up and initialize all required blocks and
     // functions related to the board hardware
     Board_Init();
@@ -158,16 +191,22 @@ int main(void) {
 #endif
 
 #ifdef FREERTOS_CONFIG_H
-    __enable_irq();
+	vSemaphoreCreateBinary(afc_init_semaphore);
+	if (afc_init_semaphore == NULL)	 {
+		asm("nop");
+	}
+	xSemaphoreTake(afc_init_semaphore, 0);
+
+    cpu_irq_enable();
 	i2c_app_init(I2C0, SPEED_100KHZ, I2CMODE_INTERRUPT);
 
 
 	afc_board_i2c_init();
 
 	Board_SSP_Init(LPC_SSP1);
-	Chip_SSP_Init(LPC_SSP1);
-	Chip_SSP_Enable(LPC_SSP1);
-	Chip_SSP_SetMaster(LPC_SSP1, 1);
+	//Chip_SSP_Init(LPC_SSP1);
+	//Chip_SSP_Enable(LPC_SSP1);
+	//Chip_SSP_SetMaster(LPC_SSP1, 1);
 	create_ssp1_mutex();
     DEBUGOUT("\r\nAFC/AFCK MMC");
 
@@ -192,14 +231,15 @@ int main(void) {
 //	LPC_SYSCTL->EXTPOLAR = 0UL << 2;
 //	NVIC_EnableIRQ(EINT2_IRQn);
 
-    Chip_GPIO_SetPinState(LPC_GPIO, 1, 22, false);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, 1, 22, true);
+  //  Chip_GPIO_SetPinState(LPC_GPIO, 1, 22, false);
+//	Chip_GPIO_SetPinDIR(LPC_GPIO, 1, 22, true);
 	//asm("nop");
-	Chip_GPIO_SetPinState(LPC_GPIO, 1, 22, true);
+	//Chip_GPIO_SetPinState(LPC_GPIO, 1, 22, true);
 
 
     IPMI_init();
     unsigned char ipmi_slave_addr = IPMB_init(I2C0);
+	ipmi_slave_addr = 0x76;
 	sdr_init(ipmi_slave_addr);
 
 	{
@@ -220,14 +260,23 @@ int main(void) {
     TaskHandle_t xIPMIHandle = NULL;
     TaskHandle_t xSensorHandle = NULL;
     TaskHandle_t xPayloadHandle = NULL;
+	struct afc_generic_task_param  xLedHandleParams;
+	struct afc_generic_task_param  xIPMIHandleParams;
+	struct afc_generic_task_param  xSensorHandleParams;
+	struct afc_generic_task_param  xPayloadHandleParams;
+	xLedHandleParams.afc_init_semaphore = afc_init_semaphore;
+	xIPMIHandleParams.afc_init_semaphore = afc_init_semaphore;
+	xSensorHandleParams.afc_init_semaphore = afc_init_semaphore;
+	xPayloadHandleParams.afc_init_semaphore = afc_init_semaphore;
 
     do_quiesced_init();
 
-    xTaskCreate(LEDTask, "LED", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xLedHandle );
-    xTaskCreate(vTaskIPMI, "IPMI", configMINIMAL_STACK_SIZE*5, NULL,  tskIDLE_PRIORITY, &xIPMIHandle );
-    xTaskCreate(vTaskSensor, "Sensor", configMINIMAL_STACK_SIZE, NULL,  tskIDLE_PRIORITY, &xSensorHandle );
-    xTaskCreate(vTaskPayload, "Payload", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xPayloadHandle);
+    xTaskCreate(LEDTask, "LED", configMINIMAL_STACK_SIZE, &xLedHandleParams, tskIDLE_PRIORITY, &xLedHandle );
+    xTaskCreate(vTaskIPMI, "IPMI", configMINIMAL_STACK_SIZE*5, &xIPMIHandleParams,  tskIDLE_PRIORITY, &xIPMIHandle );
+    xTaskCreate(vTaskSensor, "Sensor", configMINIMAL_STACK_SIZE, &xSensorHandleParams,  tskIDLE_PRIORITY, &xSensorHandle );
+    xTaskCreate(vTaskPayload, "Payload", configMINIMAL_STACK_SIZE, &xPayloadHandleParams, tskIDLE_PRIORITY, &xPayloadHandle);
 
+	
     vTaskStartScheduler();
 #else
     while(1) {
@@ -308,30 +357,30 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 /*-----------------------------------------------------------*/
 void vConfigureTimerForRunTimeStats( void )
 {
-const unsigned long TCR_COUNT_RESET = 2, CTCR_CTM_TIMER = 0x00, TCR_COUNT_ENABLE = 0x01;
-
-	/* This function configures a timer that is used as the time base when
-	collecting run time statistical information - basically the percentage
-	of CPU time that each task is utilising.  It is called automatically when
-	the scheduler is started (assuming configGENERATE_RUN_TIME_STATS is set
-	to 1). */
-
-	/* Power up and feed the timer. */
-	LPC_SYSCTL->PCONP |= 0x02UL;
-	LPC_SYSCTL->PCLKSEL[0] = (LPC_SYSCTL->PCLKSEL[0] & (~(0x3<<2))) | (0x01 << 2);
-
-	/* Reset Timer 0 */
-	LPC_TIMER0->TCR = TCR_COUNT_RESET;
-
-	/* Just count up. */
-	LPC_TIMER0->CTCR = CTCR_CTM_TIMER;
-
-	/* Prescale to a frequency that is good enough to get a decent resolution,
-	but not too fast so as to overflow all the time. */
-	LPC_TIMER0->PR =  ( configCPU_CLOCK_HZ / 10000UL ) - 1UL;
-
-	/* Start the counter. */
-	LPC_TIMER0->TCR = TCR_COUNT_ENABLE;
+// const unsigned long TCR_COUNT_RESET = 2, CTCR_CTM_TIMER = 0x00, TCR_COUNT_ENABLE = 0x01;
+// 
+// 	/* This function configures a timer that is used as the time base when
+// 	collecting run time statistical information - basically the percentage
+// 	of CPU time that each task is utilising.  It is called automatically when
+// 	the scheduler is started (assuming configGENERATE_RUN_TIME_STATS is set
+// 	to 1). */
+// 
+// 	/* Power up and feed the timer. */
+// 	LPC_SYSCTL->PCONP |= 0x02UL;
+// 	LPC_SYSCTL->PCLKSEL[0] = (LPC_SYSCTL->PCLKSEL[0] & (~(0x3<<2))) | (0x01 << 2);
+// 
+// 	/* Reset Timer 0 */
+// 	LPC_TIMER0->TCR = TCR_COUNT_RESET;
+// 
+// 	/* Just count up. */
+// 	LPC_TIMER0->CTCR = CTCR_CTM_TIMER;
+// 
+// 	/* Prescale to a frequency that is good enough to get a decent resolution,
+// 	but not too fast so as to overflow all the time. */
+// 	LPC_TIMER0->PR =  ( configCPU_CLOCK_HZ / 10000UL ) - 1UL;
+// 
+// 	/* Start the counter. */
+// 	LPC_TIMER0->TCR = TCR_COUNT_ENABLE;
 }
 /*-----------------------------------------------------------*/
 

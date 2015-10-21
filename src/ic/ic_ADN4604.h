@@ -22,7 +22,7 @@
 #ifndef IC_IC_ADN4604_H_
 #define IC_IC_ADN4604_H_
 
-#include "i2c_17xx_40xx.h"
+#include "chip_i2c.h"
 
 void adn4604_setup(I2C_ID_T i2c_bus);
 

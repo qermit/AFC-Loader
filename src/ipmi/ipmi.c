@@ -30,32 +30,12 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+#include "freertos_private.h"
 #endif
 
 
 
-static const ipmiFuncEntry_t const ipmiEntries[] = {
-		{ NETFN_APP,     IPMI_GET_DEVICE_ID_CMD, ipmi_get_device_id},
-		{ NETFN_GRPEXT,  IPMI_PICMG_CMD_GET_PROPERTIES, ipmi_picmg_get_PROPERTIES},
-		{ NETFN_GRPEXT,  IPMI_PICMG_CMD_FRU_CONTROL, ipmi_picmg_cmd_fru_control},
-		{ NETFN_GRPEXT,  IPMI_PICMG_CMD_SET_FRU_LED_STATE, ipmi_picmg_set_fru_led_state},
-		{ NETFN_GRPEXT,  IPMI_PICMG_CMD_GET_DEVICE_LOCATOR_RECORD, ipmi_picmg_get_device_locator_record},
-		{ NETFN_GRPEXT,  IPMI_PICMG_CMD_SET_AMC_PORT_STATE, ipmi_picmg_cmd_set_amc_port_state },
-		//{ NETFN_GRPEXT,  IPMI_PICMG_CMD_GET_TELCO_ALARM_CAPABILITY, ipmi_picmg_cmd_get_telco_alarm_capability},
-		{ NETFN_SE,      IPMI_SET_EVENT_RECEIVER_CMD, ipmi_se_set_event_reciever},
-		{ NETFN_SE,      IPMI_GET_DEVICE_SDR_INFO_CMD, ipmi_se_get_sdr_info},
-		{ NETFN_SE,      IPMI_GET_DEVICE_SDR_CMD, ipmi_se_get_sdr},
-		{ NETFN_SE,		 IPMI_GET_SENSOR_READING_CMD, ipmi_se_get_sensor_reading},
-		{ NETFN_SE,      IPMI_RESERVE_DEVICE_SDR_REPOSITORY_CMD, ipmi_se_reserve_device_sdr},
 
-		{ NETFN_STORAGE, IPMI_GET_FRU_INVENTORY_AREA_INFO_CMD, ipmi_storage_get_fru_info},
-		{ NETFN_STORAGE, IPMI_READ_FRU_DATA_CMD, ipmi_storage_read_fru_data_cmd},
-		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_I2C_TRANSFER, ipmi_afc_i2c_transfer},
-		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_GPIO, ipmi_afc_gpio},
-		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_SSP_TRANSFER, ipmi_afc_ssp_transfer},
-		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_SSP_TRANSFER_RAW, ipmi_afc_ssp_transfer_raw},
-		{ 0, 0, NULL }
-};
 
 // @todo: moze jakis mutex
 struct ipmi_ipmb_addr event_src;
@@ -376,23 +356,25 @@ void IPMI_check_req() {
 	p_ipmi_resp->msg.data_len = 0;
 
 
-	ipmiFuncEntry_t * p_ptr = (ipmiFuncEntry_t *) ipmiEntries;
-	while (p_ptr->process != NULL) {
+	ipmiFuncEntry_t * p_ptr = (ipmiFuncEntry_t *) &_ipmi_handlers;
+	ipmiFuncEntry_t current_entry;
+	while (p_ptr >=  &_eipmi_handlers) {
+		memcpy_P(&current_entry, p_ptr, sizeof(current_entry));
 	    	//DEBUGOUT("Function: %d:%d => %x\r\n", p_ptr->netfn, p_ptr->cmd, p_ptr->process);
-		if(p_ptr->netfn == p_ipmi_req->msg.netfn && p_ptr->cmd == p_ipmi_req->msg.cmd) {
+		if(current_entry.netfn == p_ipmi_req->msg.netfn && current_entry.cmd == p_ipmi_req->msg.cmd) {
 			break;
 		}
 	    p_ptr++;
 	}
-	if (p_ptr->process == NULL) {
+	if (p_ptr >= &_eipmi_handlers || current_entry.process == NULL ) {
 		ipmi_general_invalid(p_ipmi_req, p_ipmi_resp);
 		//p_ipmi_resp->retcode = IPMI_CC_INV_CMD;
 	} else {
 		tmp_src = & p_ipmi_req->saddr;
 		//tmp_src->lun = 0;
 		tmp_dst = & p_ipmi_req->daddr;
-
-		p_ptr->process(p_ipmi_req, p_ipmi_resp);
+		Board_LED_Toggle(1);
+		current_entry.process(p_ipmi_req, p_ipmi_resp);
 
 	}
 
@@ -442,7 +424,7 @@ void IPMI_put_event_response(struct ipmi_msg * p_ipmi_req) {
 	event_recv = p_ipmi_req;
 	static BaseType_t xHigherPriorityTaskWoken;
 	xSemaphoreGiveFromISR(ipmi_message_recvd_sid, &xHigherPriorityTaskWoken);
-	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+	//portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 }
 
 
@@ -451,6 +433,14 @@ void vTaskIPMI( void *pvParmeters )
 	TickType_t xLastWakeTime, xCurrentWakeTime;
 	QueueSetMemberHandle_t xActivatedMember;
 	int counts[3] = { 0, 0 ,0};
+		
+		
+	struct afc_generic_task_param *xParams = (struct afc_generic_task_param *) pvParmeters;
+	
+	while(xSemaphoreTake(xParams->afc_init_semaphore, portMAX_DELAY) == pdFALSE ) {
+		asm("nop");
+	}
+	xSemaphoreGive(xParams->afc_init_semaphore);
 
 	QueueSetHandle_t event_set = xQueueCreateSet(IPMI_BUFF_COUNT*2+2);
 	xQueueAddToSet(req_msg_queue, event_set);

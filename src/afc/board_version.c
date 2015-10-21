@@ -147,6 +147,7 @@ struct i2c_chip_mapping i2c_chip_map[] = {
 /* Set I2C mode to polling/interrupt */
 static void i2c_set_mode(I2C_ID_T id, int polling)
 {
+	/*
 	IRQn_Type irq_type = I2C0_IRQn;
 	switch (id) {
 		case I2C0: irq_type = I2C0_IRQn; break ;
@@ -155,15 +156,18 @@ static void i2c_set_mode(I2C_ID_T id, int polling)
 		default: return;
 
 	}
+	*/
 
 	if(!polling) {
 		//mode_poll &= ~(1 << id);
-		Chip_I2C_SetMasterEventHandler(id, Chip_I2C_EventHandler);
-		NVIC_EnableIRQ(irq_type);
+		#warning "naprawic"
+		//Chip_I2C_SetMasterEventHandler(id, Chip_I2C_EventHandler);
+		//NVIC_EnableIRQ(irq_type);
 	} else {
 		//mode_poll |= 1 << id;
-		NVIC_DisableIRQ(irq_type);
-		Chip_I2C_SetMasterEventHandler(id, Chip_I2C_EventHandlerPolling);
+		#warning "naprawic"
+		//NVIC_DisableIRQ(irq_type);
+		//Chip_I2C_SetMasterEventHandler(id, Chip_I2C_EventHandlerPolling);
 	}
 }
 
@@ -173,8 +177,8 @@ void i2c_app_init(I2C_ID_T id, int speed, int pooling)
 	Board_I2C_Init(id);
 
 	/* Initialize I2C */
-	Chip_I2C_Init(id);
-	Chip_I2C_SetClockRate(id, speed);
+	//Chip_I2C_Init(id);
+	//Chip_I2C_SetClockRate(id, speed);
 
 	/* Set default mode to interrupt */
 	i2c_set_mode(id, pooling);
@@ -204,8 +208,8 @@ void afc_board_discover()
 	xfer.rxBuff = (uint8_t *) &afc_board_info;
 	xfer.rxSz = sizeof(afc_board_info);
 
-	while (Chip_I2C_MasterTransfer(I2C1, &xfer) == I2C_STATUS_ARBLOST) {
-	}
+//	while (Chip_I2C_MasterTransfer(I2C1, &xfer) == I2C_STATUS_ARBLOST) {
+//	}
 
 	uint8_t crc_fail = ipmb_crc((uint8_t *) &afc_board_info, 8 );
 
@@ -287,6 +291,8 @@ Bool afc_i2c_take_by_busid(uint8_t bus_id, I2C_ID_T * i2c_interface, TickType_t 
 	} else if (i2c_chip_map[CHIP_ID_MUX].bus_id == I2C_BUS_UNKNOWN_ID) {
 
 		if (p_i2c_bus->mux_bus == 0) {
+			#warning "naprawic"
+			/*
 			Chip_I2C_Disable(p_i2c_bus->i2c_interface);
 			Chip_I2C_DeInit(p_i2c_bus->i2c_interface);
 
@@ -301,8 +307,10 @@ Bool afc_i2c_take_by_busid(uint8_t bus_id, I2C_ID_T * i2c_interface, TickType_t 
 			Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
 			Chip_I2C_Init(p_i2c_bus->i2c_interface);
 			Chip_I2C_Enable(p_i2c_bus->i2c_interface);
-
+            */
 		} else if ((p_i2c_bus->mux_bus == 1)) {
+			#warning "naprawic"
+			/*
 			Chip_I2C_Disable(p_i2c_bus->i2c_interface);
 
 			Chip_I2C_DeInit(p_i2c_bus->i2c_interface);
@@ -319,7 +327,7 @@ Bool afc_i2c_take_by_busid(uint8_t bus_id, I2C_ID_T * i2c_interface, TickType_t 
 
 			Chip_I2C_Init(p_i2c_bus->i2c_interface);
 			Chip_I2C_Enable(p_i2c_bus->i2c_interface);
-
+            */
 		} else {
 			xSemaphoreGive(p_i2c_mux->semaphore);
 			return false;
@@ -336,8 +344,8 @@ Bool afc_i2c_take_by_busid(uint8_t bus_id, I2C_ID_T * i2c_interface, TickType_t 
 			 .rxSz = 0,
 			 .rxBuff = NULL,
 		};
-		while (Chip_I2C_MasterTransfer(i2c_chip_map[CHIP_ID_MUX].bus_id, &xfer) == I2C_STATUS_ARBLOST) {
-		}
+// 		while (Chip_I2C_MasterTransfer(i2c_chip_map[CHIP_ID_MUX].bus_id, &xfer) == I2C_STATUS_ARBLOST) {
+// 		}
 		p_i2c_mux->state = p_i2c_bus->mux_bus;
 		*i2c_interface = p_i2c_mux->i2c_interface;
 		return true;

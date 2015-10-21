@@ -24,6 +24,7 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+#include "freertos_private.h"
 #endif
 
 #include "ipmi/payload.h"
@@ -77,7 +78,7 @@ void setDC_DC_ConvertersON(bool on) {
 //		Chip_GPIO_SetPinState(LPC_GPIO, 0, 17, on );
 
 
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC1_PVADJ_PORT, GPIO_EN_FMC1_PVADJ_PIN, _on_fmc1);
+/*	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC1_PVADJ_PORT, GPIO_EN_FMC1_PVADJ_PIN, _on_fmc1);
 	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EM_FMC1_P12V_PORT, GPIO_EM_FMC1_P12V_PIN, _on_fmc1);
 	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_FMC1_P3V3_PORT, GPIO_EN_FMC1_P3V3_PIN, _on_fmc1);
 
@@ -92,6 +93,7 @@ void setDC_DC_ConvertersON(bool on) {
 	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P1V2_PORT, GPIO_EN_P1V2_PIN, _on);
 	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_1V5_VTT_PORT, GPIO_EN_1V5_VTT_PIN, _on);
 	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_EN_P3V3_PORT, GPIO_EN_P3V3_PIN, _on);
+	*/
 
 //if (on)
 //		Chip_GPIO_SetPinState(LPC_GPIO, 0, 17, on );
@@ -99,7 +101,7 @@ void setDC_DC_ConvertersON(bool on) {
 }
 void initializeDCDC() {
 	setDC_DC_ConvertersON(false);
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V2_PORT, GPIO_EN_P1V2_PIN, true);
+/*	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V2_PORT, GPIO_EN_P1V2_PIN, true);
 	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V8_PORT, GPIO_EN_P1V8_PIN, true);
 
 	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_FMC2_P3V3_PORT, GPIO_EN_FMC2_P3V3_PIN, true);
@@ -113,6 +115,7 @@ void initializeDCDC() {
 	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P3V3_PORT, GPIO_EN_P3V3_PIN, true);
 	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_1V5_VTT_PORT, GPIO_EN_1V5_VTT_PIN, true);
 	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_EN_P1V0_PORT, GPIO_EN_P1V0_PIN, true);
+	*/
 }
 
 
@@ -144,12 +147,19 @@ void vTaskPayload(void *pvParmeters) {
 
 	uint8_t current_message;
 
+	struct afc_generic_task_param *xParams = (struct afc_generic_task_param *) pvParmeters;
+	
+	while(xSemaphoreTake(xParams->afc_init_semaphore, portMAX_DELAY) == pdFALSE ) {
+		asm("nop");
+	}
+	xSemaphoreGive(xParams->afc_init_semaphore);
+
 	TickType_t xLastWakeTime;
 	xLastWakeTime = xTaskGetTickCount();
 
 
-	Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_PROGRAM_B_PORT, GPIO_PROGRAM_B_PIN, true);
-	Chip_GPIO_SetPinState(LPC_GPIO, GPIO_PROGRAM_B_PORT, GPIO_PROGRAM_B_PIN, true);
+	//Chip_GPIO_SetPinDIR(LPC_GPIO, GPIO_PROGRAM_B_PORT, GPIO_PROGRAM_B_PIN, true);
+	//Chip_GPIO_SetPinState(LPC_GPIO, GPIO_PROGRAM_B_PORT, GPIO_PROGRAM_B_PIN, true);
 	initializeDCDC();
 
 	while(1) {
@@ -171,8 +181,9 @@ void vTaskPayload(void *pvParmeters) {
 
 		}
 
-		FPGA_boot_DONE = Chip_GPIO_GetPinState(LPC_GPIO, GPIO_DONE_B_PORT, GPIO_DONE_B_PIN);
-		P1V0_good = Chip_GPIO_GetPinState(LPC_GPIO, GPIO_PGOOD_P1V0_PORT,GPIO_PGOOD_P1V0_PIN);
+#warning "poprawic to"
+		FPGA_boot_DONE = 1;
+		P1V0_good = 1;
 
 		switch(state) {
 			case PAYLOAD_NO_POWER:

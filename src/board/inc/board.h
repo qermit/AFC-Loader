@@ -32,7 +32,7 @@
 #ifndef __BOARD_H_
 #define __BOARD_H_
 
-#include "chip.h"
+#include <chip.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,43 +74,23 @@ extern "C" {
  */
 
 /* Board name */
-#define BOARD_NXP_LPCXPRESSO_1769
+#define BOARD_MATPEX
 
+#define PIN_LED0 IOPORT_CREATE_PIN(PORTH,1)
+#define PIN_LED1 IOPORT_CREATE_PIN(PORTH,3)
+#define PIN_LED2 IOPORT_CREATE_PIN(PORTJ,5)
 
-#define USE_RMII
+#define PIN_GA_TEST   IOPORT_CREATE_PIN(PORTC,2)
+#define PIN_GA0       IOPORT_CREATE_PIN(PORTC,3)
+#define PIN_GA1       IOPORT_CREATE_PIN(PORTC,4)
+#define PIN_GA2       IOPORT_CREATE_PIN(PORTC,5)
 
-/**
- * LED defines
- */
-#define LEDS_LED1           0x01
-#define LEDS_LED2           0x02
-#define LEDS_LED3           0x04
-#define LEDS_LED4           0x08
-#define LEDS_NO_LEDS        0x00
-
-
-#define LED0_GPIO_PORT_NUM      1
-#define LED0_GPIO_BIT_NUM       9
-#define LED1_GPIO_PORT_NUM      1
-#define LED1_GPIO_BIT_NUM      10
-#define LED2_GPIO_PORT_NUM      1
-#define LED2_GPIO_BIT_NUM      25
-
-#define GA_TEST_PORT  1
-#define GA0_PORT      1
-#define GA1_PORT      1
-#define GA2_PORT      1
-
-#define GA_TEST_PIN  8
-#define GA0_PIN      0
-#define GA1_PIN      1
-#define GA2_PIN      4
 
 /**
  * Button defines
  */
-#define BUTTONS_BUTTON1     0x01
-#define NO_BUTTON_PRESSED   0x00
+#define PIN_HOT_SWAP_HANDLE IOPORT_CREATE_PIN(PORTD,2)
+
 
 /**
  * Joystick defines
@@ -149,7 +129,7 @@ void Board_ENET_GetMacADDR(uint8_t *mcaddr);
  *          LINE_IN will be used as input to Audio Codec.
  * @return	Nothing
  */
-void Board_Audio_Init(LPC_I2S_T *pI2S, int micIn);
+//void Board_Audio_Init(LPC_I2S_T *pI2S, int micIn);
 
 /**
  * @brief	Initialize pin muxing for SSP interface
@@ -195,7 +175,7 @@ void Board_I2C_Init(I2C_ID_T id);
  */
 STATIC INLINE void Board_I2C_EnableFastPlus(I2C_ID_T id)
 {
-	Chip_IOCON_SetI2CPad(LPC_IOCON, I2CPADCFG_FAST_MODE_PLUS);
+	//Chip_IOCON_SetI2CPad(LPC_IOCON, I2CPADCFG_FAST_MODE_PLUS);
 }
 
 /**
@@ -205,7 +185,7 @@ STATIC INLINE void Board_I2C_EnableFastPlus(I2C_ID_T id)
  */
 STATIC INLINE void Board_I2C_DisableFastPlus(I2C_ID_T id)
 {
-	Chip_IOCON_SetI2CPad(LPC_IOCON, I2CPADCFG_STD_MODE);
+	//Chip_IOCON_SetI2CPad(LPC_IOCON, I2CPADCFG_STD_MODE);
 }
 
 /**
@@ -218,7 +198,7 @@ void Board_Buttons_Init(void);
  * @brief	Get button status
  * @return	status of button
  */
-uint32_t Buttons_GetStatus(void);
+uint8_t Buttons_GetStatus(uint8_t button_id);
 
 /**
  * @brief	Initialize Joystick

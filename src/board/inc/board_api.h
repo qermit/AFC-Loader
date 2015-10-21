@@ -32,12 +32,14 @@
 #ifndef __BOARD_API_H_
 #define __BOARD_API_H_
 
-#include "lpc_types.h"
+#include "chip_types.h"
 #include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
 
 /** @defgroup BOARD_COMMON_API BOARD: Common board functions
  * @ingroup BOARD_Common

@@ -75,9 +75,15 @@ static void Board_LED_Init(void)
 	Board_LED_Set(0, false);
 	Board_LED_Set(1, false);
 	Board_LED_Set(2, false);
-	Chip_GPIO_WriteDirBit(LPC_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM, true);
-	Chip_GPIO_WriteDirBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM, true);
-	Chip_GPIO_WriteDirBit(LPC_GPIO, LED2_GPIO_PORT_NUM, LED2_GPIO_BIT_NUM, true);
+	
+	//ioport_configure_port_pin(LED0_GPIO_PORT_NUM,
+	ioport_configure_pin(PIN_LED0, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
+	ioport_configure_pin(PIN_LED1, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
+	ioport_configure_pin(PIN_LED2, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
+	
+//	Chip_GPIO_WriteDirBit(AFCIPM_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM, true);
+//	Chip_GPIO_WriteDirBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM, true);
+//	Chip_GPIO_WriteDirBit(LPC_GPIO, LED2_GPIO_PORT_NUM, LED2_GPIO_BIT_NUM, true);
 }
 
 /*****************************************************************************
@@ -140,12 +146,13 @@ void Board_LED_Set(uint8_t LEDNumber, bool On)
 {
 	/* There is only one LED */
 	if (LEDNumber == 0) {
-		Chip_GPIO_WritePortBit(LPC_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM, !On);
+		ioport_set_pin_level(PIN_LED0,!On);
+		
 	} else if (LEDNumber == 1) {
-		Chip_GPIO_WritePortBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM, !On);
+		ioport_set_pin_level(PIN_LED1,!On);
 	}
 	else if (LEDNumber == 2) {
-		Chip_GPIO_WritePortBit(LPC_GPIO, LED2_GPIO_PORT_NUM, LED2_GPIO_BIT_NUM, !On);
+		ioport_set_pin_level(PIN_LED2,!On);
 	}
 }
 
@@ -155,11 +162,11 @@ bool Board_LED_Test(uint8_t LEDNumber)
 	bool state = false;
 
 	if (LEDNumber == 0) {
-		state = ! Chip_GPIO_ReadPortBit(LPC_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM);
+		state = ! ioport_get_pin_level(PIN_LED0);
 	} else if (LEDNumber == 1) {
-		state = ! Chip_GPIO_ReadPortBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM);
+		state = ! ioport_get_pin_level(PIN_LED1);
 	} else if (LEDNumber == 2) {
-		state = ! Chip_GPIO_ReadPortBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED2_GPIO_BIT_NUM);
+		state = ! ioport_get_pin_level(PIN_LED2);
 	}
 
 	return state;
@@ -176,12 +183,16 @@ void Board_LED_Toggle(uint8_t LEDNumber)
    board hardware */
 void Board_Init(void)
 {
+	sysclk_init();
+	//pmic_init();
+
+	//pmic_set_scheduling(PMIC_SCH_ROUND_ROBIN);
 	/* Sets up DEBUG UART */
 	DEBUGINIT();
 
 	/* Initializes GPIO */
-	Chip_GPIO_Init(LPC_GPIO);
-	Chip_IOCON_Init(LPC_IOCON);
+	//Chip_GPIO_Init(LPC_GPIO);
+	//Chip_IOCON_Init(LPC_IOCON);
 
 	/* Initialize LEDs */
 	Board_LED_Init();
@@ -198,35 +209,41 @@ void Board_ENET_GetMacADDR(uint8_t *mcaddr)
 /* Initialize pin muxing for SSP interface */
 void Board_SSP_Init(LPC_SSP_T *pSSP)
 {
-	if (pSSP == LPC_SSP1) {
-		/* Set up clock and muxing for SSP1 interface */
-		/*
-		 * Initialize SSP0 pins connect
-		 * P0.7: SCK
-		 * P0.6: SSEL
-		 * P0.8: MISO
-		 * P0.9: MOSI
-		 */
-		Chip_IOCON_PinMux(LPC_IOCON, 0, 6, IOCON_MODE_INACT, IOCON_FUNC0);
-
-		Chip_IOCON_PinMux(LPC_IOCON, 0, 7, IOCON_MODE_INACT, IOCON_FUNC2);
-		Chip_IOCON_PinMux(LPC_IOCON, 0, 8, IOCON_MODE_INACT, IOCON_FUNC2);
-		Chip_IOCON_PinMux(LPC_IOCON, 0, 9, IOCON_MODE_INACT, IOCON_FUNC2);
-	}
-	else {
-		/* Set up clock and muxing for SSP0 interface */
-		/*
-		 * Initialize SSP0 pins connect
-		 * P1.20: SCK
-		 * P1.21: SSEL
-		 * P1.23: MISO
-		 * P1.24: MOSI
-		 */
-		Chip_IOCON_PinMux(LPC_IOCON, 1, 20, IOCON_MODE_INACT, IOCON_FUNC3);
-		Chip_IOCON_PinMux(LPC_IOCON, 1, 21, IOCON_MODE_INACT, IOCON_FUNC3);
-		Chip_IOCON_PinMux(LPC_IOCON, 1, 23, IOCON_MODE_INACT, IOCON_FUNC3);
-		Chip_IOCON_PinMux(LPC_IOCON, 1, 24, IOCON_MODE_INACT, IOCON_FUNC3);
-	}
+	
+	
+// 	if (pSSP == LPC_SSP1) {
+// 		/* Set up clock and muxing for SSP1 interface */
+// 		/*
+// 		 * Initialize SSP0 pins connect
+// 		 * P0.7: SCK
+// 		 * P0.6: SSEL
+// 		 * P0.8: MISO
+// 		 * P0.9: MOSI
+// 		 */
+// 		/*
+// 		Chip_IOCON_PinMux(LPC_IOCON, 0, 6, IOCON_MODE_INACT, IOCON_FUNC0);
+// 
+// 		Chip_IOCON_PinMux(LPC_IOCON, 0, 7, IOCON_MODE_INACT, IOCON_FUNC2);
+// 		Chip_IOCON_PinMux(LPC_IOCON, 0, 8, IOCON_MODE_INACT, IOCON_FUNC2);
+// 		Chip_IOCON_PinMux(LPC_IOCON, 0, 9, IOCON_MODE_INACT, IOCON_FUNC2);
+// 		*/
+// 	}
+// 	else {
+// 		/* Set up clock and muxing for SSP0 interface */
+// 		/*
+// 		 * Initialize SSP0 pins connect
+// 		 * P1.20: SCK
+// 		 * P1.21: SSEL
+// 		 * P1.23: MISO
+// 		 * P1.24: MOSI
+// 		 */
+// 		/*
+// 		Chip_IOCON_PinMux(LPC_IOCON, 1, 20, IOCON_MODE_INACT, IOCON_FUNC3);
+// 		Chip_IOCON_PinMux(LPC_IOCON, 1, 21, IOCON_MODE_INACT, IOCON_FUNC3);
+// 		Chip_IOCON_PinMux(LPC_IOCON, 1, 23, IOCON_MODE_INACT, IOCON_FUNC3);
+// 		Chip_IOCON_PinMux(LPC_IOCON, 1, 24, IOCON_MODE_INACT, IOCON_FUNC3);
+// 		*/
+// 	}
 }
 
 /* Initialize pin muxing for SPI interface */
@@ -240,6 +257,7 @@ void Board_SPI_Init(bool isMaster)
 	 * P0.17: MISO
 	 * P0.18: MOSI
 	 */
+	/*
 	Chip_IOCON_PinMux(LPC_IOCON, 0, 15, IOCON_MODE_PULLDOWN, IOCON_FUNC3);
 	if (isMaster) {
 		Chip_IOCON_PinMux(LPC_IOCON, 0, 16, IOCON_MODE_PULLUP, IOCON_FUNC0);
@@ -252,44 +270,48 @@ void Board_SPI_Init(bool isMaster)
 	}
 	Chip_IOCON_PinMux(LPC_IOCON, 0, 17, IOCON_MODE_INACT, IOCON_FUNC3);
 	Chip_IOCON_PinMux(LPC_IOCON, 0, 18, IOCON_MODE_INACT, IOCON_FUNC3);
+	*/
 }
 
 /* Assert SSEL pin */
 void Board_SPI_AssertSSEL(void)
 {
-	Chip_GPIO_WritePortBit(LPC_GPIO, 0, 16, false);
+	//Chip_GPIO_WritePortBit(LPC_GPIO, 0, 16, false);
 }
 
 /* De-Assert SSEL pin */
 void Board_SPI_DeassertSSEL(void)
 {
-	Chip_GPIO_WritePortBit(LPC_GPIO, 0, 16, true);
+	//Chip_GPIO_WritePortBit(LPC_GPIO, 0, 16, true);
 }
 
-void Board_Audio_Init(LPC_I2S_T *pI2S, int micIn)
-{
-	I2S_AUDIO_FORMAT_T I2S_Config;
-
-	/* Chip_Clock_EnablePeripheralClock(SYSCTL_CLOCK_I2S); */
-
-	I2S_Config.SampleRate = 48000;
-	I2S_Config.ChannelNumber = 2;	/* 1 is mono, 2 is stereo */
-	I2S_Config.WordWidth =  16;		/* 8, 16 or 32 bits */
-	Chip_I2S_Init(pI2S);
-	Chip_I2S_TxConfig(pI2S, &I2S_Config);
-}
+// void Board_Audio_Init(LPC_I2S_T *pI2S, int micIn)
+// {
+// 	I2S_AUDIO_FORMAT_T I2S_Config;
+// 
+// 	/* Chip_Clock_EnablePeripheralClock(SYSCTL_CLOCK_I2S); */
+// 
+// 	I2S_Config.SampleRate = 48000;
+// 	I2S_Config.ChannelNumber = 2;	/* 1 is mono, 2 is stereo */
+// 	I2S_Config.WordWidth =  16;		/* 8, 16 or 32 bits */
+// 	Chip_I2S_Init(pI2S);
+// 	Chip_I2S_TxConfig(pI2S, &I2S_Config);
+// }
 
 /* Sets up board specific I2C interface */
 void Board_I2C_Init(I2C_ID_T id)
 {
 	switch (id) {
 	case I2C0:
+		/*
 		Chip_IOCON_PinMux(LPC_IOCON, 0, 27, IOCON_MODE_INACT, IOCON_FUNC1);
 		Chip_IOCON_PinMux(LPC_IOCON, 0, 28, IOCON_MODE_INACT, IOCON_FUNC1);
 		Chip_IOCON_SetI2CPad(LPC_IOCON, I2CPADCFG_STD_MODE);
+		*/
 		break;
 
 	case I2C1:
+		/*
 		Chip_IOCON_PinMux(LPC_IOCON, 0,  0, IOCON_MODE_INACT, IOCON_FUNC3);
 		Chip_IOCON_PinMux(LPC_IOCON, 0,  1, IOCON_MODE_INACT, IOCON_FUNC3);
 		Chip_IOCON_EnableOD(LPC_IOCON, 0,  0);
@@ -299,14 +321,16 @@ void Board_I2C_Init(I2C_ID_T id)
 		Chip_IOCON_PinMux(LPC_IOCON, 0, 20, IOCON_MODE_INACT, IOCON_FUNC0);
 		Chip_IOCON_EnableOD(LPC_IOCON, 0, 19);
 		Chip_IOCON_EnableOD(LPC_IOCON, 0, 20);
-
+		*/
 		break;
 
 	case I2C2:
+		/*
 		Chip_IOCON_PinMux(LPC_IOCON, 0, 10, IOCON_MODE_INACT, IOCON_FUNC2);
 		Chip_IOCON_PinMux(LPC_IOCON, 0, 11, IOCON_MODE_INACT, IOCON_FUNC2);
 		Chip_IOCON_EnableOD(LPC_IOCON, 0, 10);
 		Chip_IOCON_EnableOD(LPC_IOCON, 0, 11);
+		*/
 		break;
 	default:
 		break;
@@ -315,14 +339,15 @@ void Board_I2C_Init(I2C_ID_T id)
 
 void Board_Buttons_Init(void)
 {
-	Chip_GPIO_WriteDirBit(LPC_GPIO, BUTTONS_BUTTON1_GPIO_PORT_NUM, BUTTONS_BUTTON1_GPIO_BIT_NUM, false);
+	ioport_configure_pin(PIN_HOT_SWAP_HANDLE, IOPORT_DIR_INPUT | IOPORT_INIT_LOW);
+	//Chip_GPIO_WriteDirBit(LPC_GPIO, BUTTONS_BUTTON1_GPIO_PORT_NUM, BUTTONS_BUTTON1_GPIO_BIT_NUM, false);
 }
 
-uint32_t Buttons_GetStatus(void)
+uint8_t Buttons_GetStatus(uint8_t button_id)
 {
-	uint8_t ret = NO_BUTTON_PRESSED;
-	if (Chip_GPIO_ReadPortBit(LPC_GPIO, BUTTONS_BUTTON1_GPIO_PORT_NUM, BUTTONS_BUTTON1_GPIO_BIT_NUM) == 0x00) {
-		ret |= BUTTONS_BUTTON1;
+	uint8_t ret = 0;
+	if (button_id == 0) {
+		ioport_get_pin_level(PIN_HOT_SWAP_HANDLE);
 	}
 	return ret;
 }
@@ -354,27 +379,13 @@ static const uint8_t stateButton[NUM_BUTTONS] = {
 /* Initialize Joystick */
 void Board_Joystick_Init(void)
 {
-	int ix;
-
-	/* IOCON states already selected in SystemInit(), GPIO setup only. Pullups
-	   are external, so IOCON with no states */
-	for (ix = 0; ix < NUM_BUTTONS; ix++) {
-		Chip_GPIO_SetPinDIRInput(LPC_GPIO, portButton[ix], pinButton[ix]);
-	}
+	
 }
 
 /* Get Joystick status */
 uint8_t Joystick_GetStatus(void)
 {
-	uint8_t ix, ret = 0;
-
-	for (ix = 0; ix < NUM_BUTTONS; ix++) {
-		if ((Chip_GPIO_GetPinState(LPC_GPIO, portButton[ix], pinButton[ix])) == false) {
-			ret |= stateButton[ix];
-		}
-	}
-
-	return ret;
+	return 0;
 }
 
 
@@ -386,10 +397,11 @@ void Board_USBD_Init(uint32_t port)
 	/* VBUS is not connected on the NXP LPCXpresso LPC1769, so leave the pin at default setting. */
 	/*Chip_IOCON_PinMux(LPC_IOCON, 1, 30, IOCON_MODE_INACT, IOCON_FUNC2);*/ /* USB VBUS */
 
-	Chip_IOCON_PinMux(LPC_IOCON, 0, 29, IOCON_MODE_INACT, IOCON_FUNC1);	/* P0.29 D1+, P0.30 D1- */
-	Chip_IOCON_PinMux(LPC_IOCON, 0, 30, IOCON_MODE_INACT, IOCON_FUNC1);
 
-	LPC_USB->USBClkCtrl = 0x12;                /* Dev, AHB clock enable */
-	while ((LPC_USB->USBClkSt & 0x12) != 0x12);
+// 	Chip_IOCON_PinMux(LPC_IOCON, 0, 29, IOCON_MODE_INACT, IOCON_FUNC1);	/* P0.29 D1+, P0.30 D1- */
+// 	Chip_IOCON_PinMux(LPC_IOCON, 0, 30, IOCON_MODE_INACT, IOCON_FUNC1);
+// 
+// 	LPC_USB->USBClkCtrl = 0x12;                /* Dev, AHB clock enable */
+// 	while ((LPC_USB->USBClkSt & 0x12) != 0x12);
 }
 
