@@ -338,11 +338,26 @@ void vPortEndScheduler(void) {
  * Manual context switch.  The first thing we do is save the registers so we
  * can use a naked attribute.
  */
-void vPortYield(void) __attribute__ ( ( naked ) );
+//void vPortYield(void) __attribute__ ( ( naked ) );
 void vPortYield(void) {
+	/*
+	asm volatile ("PUSH R28		\n\t"
+"PUSH R29		\n\t"
+"IN R28,0x3D		\n\t"
+"IN R29,0x3E		\n\t"
+//	portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT_SET;
+"LDI R24,0xD2		Load immediate 
+"LDI R25,0x07		Load immediate 
+"LDI R18,0x73		Load immediate 
+"MOVW R30,R24		Copy register pair 
+"STD Z+0,R18		Store indirect with displacement 
+}
+"POP R29		Pop register from stack 
+"POP R28		Pop register from stack 
+"RET 		Subroutine return */
 	//portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT;
 	portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT_SET;
-    asm volatile ( "ret" );	
+  //  asm volatile ( "ret" );	
 }
 /*-----------------------------------------------------------*/
 
@@ -381,23 +396,26 @@ volatile uint8_t v1 = 0;
 volatile uint8_t v2 = 0;
 /* emulate PendSV */
 ISR(PORTQ_INT0_vect, ISR_NAKED) {
+	// save context first
+	portSAVE_CONTEXT();
+	
 	portNVIC_INT_CTRL_REG_CLR = portNVIC_PENDSVSET_BIT_CLR;
 	PORTQ_INTFLAGS = 1<<0;
 	
-	portSAVE_CONTEXT();
     vTaskSwitchContext();
+	
     portRESTORE_CONTEXT();
 
 	asm volatile ("reti");
 }
 
 /* emulate SVC */
-ISR(PORTQ_INT1_vect, ISR_NAKED) {
+ISR(PORTQ_INT1_vect) {
 	//portNVIC_INT_CTRL_REG_CLR = 1<<3;
 	PORTQ_INTFLAGS = 1<<1;
 	asm volatile("nop");
-	v2++;
-	asm volatile ("reti");
+	//v2++;
+	//asm volatile ("reti");
 }
 
 
@@ -421,7 +439,8 @@ ISR(PORTQ_INT1_vect, ISR_NAKED) {
 // 		  asm volatile ( "reti" );
 // }
 
- ISR (TCC0_OVF_vect, ISR_NAKED) {
+
+ ISR (TCC0_OVF_vect) {
      /*
       * Context switch function used by the tick.  This must be identical to
       * vPortYield() from the call to vTaskSwitchContext() onwards.  The only
@@ -432,10 +451,11 @@ ISR(PORTQ_INT1_vect, ISR_NAKED) {
 	// Board_LED_Toggle(2);
      xTaskIncrementTick();
 	 portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT_SET;
+	 
      //vTaskSwitchContext();
      //portRESTORE_CONTEXT();
 	 
-     asm volatile ( "reti" );
+   
 }
 
 #else
