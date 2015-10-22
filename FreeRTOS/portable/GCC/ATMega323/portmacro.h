@@ -83,6 +83,8 @@ typedef unsigned char UBaseType_t;
 /* Kernel utilities. */
 extern void vPortYield( void ) __attribute__ ( ( naked ) );
 #define portYIELD()                    vPortYield()
+#define portEND_SWITCHING_ISR( xSwitchRequired ) if( xSwitchRequired ) portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT
+#define portYIELD_FROM_ISR( x ) portEND_SWITCHING_ISR( x )
 /*-----------------------------------------------------------*/
 
 /* Task function macros as described on the FreeRTOS.org WEB site. */

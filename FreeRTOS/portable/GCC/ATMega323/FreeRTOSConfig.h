@@ -178,7 +178,9 @@ numeric value the higher the interrupt priority). */
 #define configEMAC_INTERRUPT_PRIORITY		5
 #define configUSB_INTERRUPT_PRIORITY		6
 
-
+#define portNVIC_INT_CTRL_REG_SET PORTQ_OUTCLR
+#define portNVIC_INT_CTRL_REG_CLR PORTQ_OUTSET
+#define portNVIC_PENDSVSET_BIT (1<<2)
 
 /*-----------------------------------------------------------
  * Macros required to setup the timer for the run time stats.

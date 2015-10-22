@@ -290,16 +290,16 @@ unsigned char IPMB_init(I2C_ID_T id)
 	slave.receivedData = &seep_data[1];
 	slave.slave_address = IPMB_slave_addr;
 
-    TWI_SlaveInitializeDriver(&slave, &TWIC, *IPMB_event_done);
-    TWI_SlaveInitializeModule(&slave, IPMB_slave_addr >> 1,TWI_SLAVE_INTLVL_MED_gc);
+  //  TWI_SlaveInitializeDriver(&slave, &TWIC, *IPMB_event_done);
+//    TWI_SlaveInitializeModule(&slave, IPMB_slave_addr >> 1,TWI_SLAVE_INTLVL_MED_gc);
 
 	m_options.speed     = 100000;
 	m_options.chip      = IPMB_slave_addr >> 1;
 	m_options.speed_reg = TWI_BAUD(sysclk_get_cpu_hz(), 100000);
 
 	
-	twi_master_init(&TWIC, &m_options);
-	twi_master_enable(&TWIC);
+	//twi_master_init(&TWIC, &m_options);
+	//twi_master_enable(&TWIC);
 
 	//Chip_I2C_SlaveSetup(id, I2C_SLAVE_0, &seep_xfer, IPMB_events, 0);
 #ifdef FREERTOS_CONFIG_H

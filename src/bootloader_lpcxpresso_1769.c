@@ -86,6 +86,7 @@ static const ipmiFuncEntry_t const  __attribute__ ((section (".ipmi_handlers")))
  		{ NETFN_CUSTOM_AFC, IPMI_AFC_CMD_SSP_TRANSFER_RAW, NULL},
 };
 
+int led_counter = 0;
 void LEDTask( void *pvParmeters )
 {
 TickType_t xLastWakeTime;
@@ -105,7 +106,7 @@ TickType_t xLastWakeTime;
 	int i = 0;
 	current_entry.cmd = ipmiEntries[i].cmd;
 	
-    for( ;; )
+    for(led_counter = 0 ;; led_counter++)
     {
 				
 	
@@ -175,8 +176,12 @@ void reset_FPGA(void)
 
 SemaphoreHandle_t afc_init_semaphore;
 
+uint8_t reset_cause = 0;
+
 int main(void) {
 	cpu_irq_disable();
+	reset_cause = RST_STATUS;
+	RST_STATUS = reset_cause;
 #if defined (__USE_LPCOPEN)
 #if !defined(NO_BOARD_LIB)
     // Read clock settings and update SystemCoreClock variable
@@ -197,7 +202,7 @@ int main(void) {
 	}
 	xSemaphoreTake(afc_init_semaphore, 0);
 
-    cpu_irq_enable();
+    //cpu_irq_enable();
 	i2c_app_init(I2C0, SPEED_100KHZ, I2CMODE_INTERRUPT);
 
 
