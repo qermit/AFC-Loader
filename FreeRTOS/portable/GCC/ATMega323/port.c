@@ -300,9 +300,9 @@ BaseType_t xPortStartScheduler(void) {
 	PORTQ_DIRSET =  1<<2 | 1<<3;
 	PORTQ_INT0MASK = 1<<2;
 	PORTQ_INT1MASK = 1<<3;
-	
 	PORTQ_PIN2CTRL = 0b00110011;
 	PORTQ_PIN3CTRL = 0b00110011;
+	
 	PORTQ_INTCTRL = 0b00000101;
 	pmic_enable_level(PMIC_LVL_LOW);
 	pmic_set_scheduling(PMIC_SCH_ROUND_ROBIN);
@@ -338,10 +338,11 @@ void vPortEndScheduler(void) {
  * Manual context switch.  The first thing we do is save the registers so we
  * can use a naked attribute.
  */
-//void vPortYield(void) __attribute__ ( ( naked ) );
+void vPortYield(void) __attribute__ ( ( naked ) );
 void vPortYield(void) {
-	portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT;
-    //asm volatile ( "ret" );
+	//portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT;
+	portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT_SET;
+    asm volatile ( "ret" );	
 }
 /*-----------------------------------------------------------*/
 
@@ -380,7 +381,7 @@ volatile uint8_t v1 = 0;
 volatile uint8_t v2 = 0;
 /* emulate PendSV */
 ISR(PORTQ_INT0_vect, ISR_NAKED) {
-	portNVIC_INT_CTRL_REG_CLR = portNVIC_PENDSVSET_BIT;
+	portNVIC_INT_CTRL_REG_CLR = portNVIC_PENDSVSET_BIT_CLR;
 	PORTQ_INTFLAGS = 1<<0;
 	
 	portSAVE_CONTEXT();
@@ -392,7 +393,7 @@ ISR(PORTQ_INT0_vect, ISR_NAKED) {
 
 /* emulate SVC */
 ISR(PORTQ_INT1_vect, ISR_NAKED) {
-	portNVIC_INT_CTRL_REG_CLR = 1<<3;
+	//portNVIC_INT_CTRL_REG_CLR = 1<<3;
 	PORTQ_INTFLAGS = 1<<1;
 	asm volatile("nop");
 	v2++;
@@ -430,7 +431,7 @@ ISR(PORTQ_INT1_vect, ISR_NAKED) {
      //portSAVE_CONTEXT();
 	// Board_LED_Toggle(2);
      xTaskIncrementTick();
-	 portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT;
+	 portNVIC_INT_CTRL_REG_SET = portNVIC_PENDSVSET_BIT_SET;
      //vTaskSwitchContext();
      //portRESTORE_CONTEXT();
 	 

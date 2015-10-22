@@ -59,7 +59,7 @@
 #warning "BOOTLOADER Verion"
 #endif
 
-#define DELAY_PERIOD 1000
+#define DELAY_PERIOD_LED 1000
 
 #ifdef FREERTOS_CONFIG_H
 
@@ -112,7 +112,7 @@ TickType_t xLastWakeTime;
 	
 		memcpy_P(&current_entry, p_ptr, sizeof(current_entry));
 		// Wait for the next cycle.
-        vTaskDelayUntil( &xLastWakeTime, DELAY_PERIOD );
+        vTaskDelayUntil( &xLastWakeTime, DELAY_PERIOD_LED );
         Board_LED_Toggle(0);
        // Board_LED_Toggle(2);
 	   p_ptr++;
@@ -276,10 +276,10 @@ int main(void) {
 
     do_quiesced_init();
 
-    xTaskCreate(LEDTask, "LED", configMINIMAL_STACK_SIZE, &xLedHandleParams, tskIDLE_PRIORITY, &xLedHandle );
+    xTaskCreate(LEDTask, "LED", configMINIMAL_STACK_SIZE*2, &xLedHandleParams, tskIDLE_PRIORITY, &xLedHandle );
     xTaskCreate(vTaskIPMI, "IPMI", configMINIMAL_STACK_SIZE*5, &xIPMIHandleParams,  tskIDLE_PRIORITY, &xIPMIHandle );
-    xTaskCreate(vTaskSensor, "Sensor", configMINIMAL_STACK_SIZE, &xSensorHandleParams,  tskIDLE_PRIORITY, &xSensorHandle );
-    xTaskCreate(vTaskPayload, "Payload", configMINIMAL_STACK_SIZE, &xPayloadHandleParams, tskIDLE_PRIORITY, &xPayloadHandle);
+    xTaskCreate(vTaskSensor, "Sensor", configMINIMAL_STACK_SIZE*5, &xSensorHandleParams,  tskIDLE_PRIORITY, &xSensorHandle );
+    xTaskCreate(vTaskPayload, "Payload", configMINIMAL_STACK_SIZE*5, &xPayloadHandleParams, tskIDLE_PRIORITY, &xPayloadHandle);
 
 	
     vTaskStartScheduler();
