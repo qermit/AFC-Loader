@@ -183,7 +183,7 @@ void IPMB_event_done() {
 	if (p_ipmi_req != NULL)
 			decode_result = ipmb_decode(p_ipmi_req, seep_data, slave.bytesReceived+1);
 	
-	Board_LED_Toggle(2);		
+	Board_LED_Toggle(LED_RED);		
 		if (decode_result == 0) {
 			if (p_ipmi_req->msg.netfn & 0x01) {
 				// handle response, not expecting any response
@@ -211,7 +211,7 @@ static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 	uint8_t * ptr;
 	int decode_result;
 	struct ipmi_msg* p_ipmi_req;
-	Board_LED_Toggle(2);
+//	Board_LED_Toggle(2);
 	switch(event) {
 		case I2C_EVENT_DONE:
 			//DEBUGOUT_IPMB("%x %x %d\r\n", seep_data, seep_xfer.rxBuff, seep_xfer.rxSz);
@@ -290,16 +290,16 @@ unsigned char IPMB_init(I2C_ID_T id)
 	slave.receivedData = &seep_data[1];
 	slave.slave_address = IPMB_slave_addr;
 
-  //  TWI_SlaveInitializeDriver(&slave, &TWIC, *IPMB_event_done);
-//    TWI_SlaveInitializeModule(&slave, IPMB_slave_addr >> 1,TWI_SLAVE_INTLVL_MED_gc);
+    TWI_SlaveInitializeDriver(&slave, &TWIC, *IPMB_event_done);
+    TWI_SlaveInitializeModule(&slave, IPMB_slave_addr >> 1,TWI_SLAVE_INTLVL_MED_gc);
 
 	m_options.speed     = 100000;
 	m_options.chip      = IPMB_slave_addr >> 1;
 	m_options.speed_reg = TWI_BAUD(sysclk_get_cpu_hz(), 100000);
 
 	
-	//twi_master_init(&TWIC, &m_options);
-	//twi_master_enable(&TWIC);
+	twi_master_init(&TWIC, &m_options);
+	twi_master_enable(&TWIC);
 
 	//Chip_I2C_SlaveSetup(id, I2C_SLAVE_0, &seep_xfer, IPMB_events, 0);
 #ifdef FREERTOS_CONFIG_H
@@ -314,6 +314,9 @@ unsigned char IPMB_init(I2C_ID_T id)
 
 
 I2C_XFER_T tmp_xfer = {0};
+	
+ twi_package_t tmp_xfer_packet;
+ 
 void IPMB_send(struct ipmi_msg * msg) {
 	int length  = ipmb_encode(i2c_output_buffer, msg, 32);
 	int i;
@@ -326,12 +329,21 @@ void IPMB_send(struct ipmi_msg * msg) {
 
 	//* todo - change to send and forget
 //	Board_LED_Set(1,1);
-
+/*
 	tmp_xfer.slaveAddr = i2c_output_buffer[0] >> 1 ;
 	tmp_xfer.txBuff = &i2c_output_buffer[1];
 	tmp_xfer.txSz = length -1;
 	tmp_xfer.rxSz = 0;
+	*/
+
+	tmp_xfer_packet.addr_length = 0;
+	tmp_xfer_packet.chip = i2c_output_buffer[0] >> 1;
+	tmp_xfer_packet.buffer = &i2c_output_buffer[1];
+	tmp_xfer_packet.length = length - 1;
+	tmp_xfer_packet.no_wait = true;
 #ifdef FREERTOS_CONFIG_H
+	twi_master_write(&TWIC, &tmp_xfer_packet);
+	Board_LED_Toggle(LED_BLUE);
 	//Chip_I2C_MasterTransferXfer(I2C0, &tmp_xfer);
 #else
 	//Chip_I2C_MasterTransfer(I2C0, &tmp_xfer);

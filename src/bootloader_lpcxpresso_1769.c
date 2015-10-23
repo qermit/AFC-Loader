@@ -113,7 +113,7 @@ TickType_t xLastWakeTime;
 		memcpy_P(&current_entry, p_ptr, sizeof(current_entry));
 		// Wait for the next cycle.
         vTaskDelayUntil( &xLastWakeTime, DELAY_PERIOD_LED );
-        Board_LED_Toggle(0);
+        Board_LED_Toggle(LED_GREEN);
        // Board_LED_Toggle(2);
 	   p_ptr++;
 	   if (p_ptr >= (ipmiFuncEntry_t *) &_eipmi_handlers){
@@ -190,7 +190,7 @@ int main(void) {
     // functions related to the board hardware
     Board_Init();
 
-    Board_LED_Set(1, true);
+ //   Board_LED_Set(1, true);
     initializeDCDC();
 #endif
 #endif
@@ -247,7 +247,7 @@ int main(void) {
 	ipmi_slave_addr = 0x76;
 	sdr_init(ipmi_slave_addr);
 
-	{
+	if (0) {
 		struct ipmi_ipmb_addr tmp_src;
 		struct ipmi_ipmb_addr tmp_dst;
 		tmp_src.lun = 0;

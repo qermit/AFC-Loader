@@ -72,14 +72,14 @@ static void Board_LED_Init(void)
 {
 	/* Pin PIO0_22 is configured as GPIO pin during SystemInit */
 	/* Set the PIO_22 as output */
-	Board_LED_Set(0, false);
-	Board_LED_Set(1, false);
-	Board_LED_Set(2, false);
 	
 	//ioport_configure_port_pin(LED0_GPIO_PORT_NUM,
 	ioport_configure_pin(PIN_LED0, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
 	ioport_configure_pin(PIN_LED1, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
 	ioport_configure_pin(PIN_LED2, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
+	
+
+	
 	
 //	Chip_GPIO_WriteDirBit(AFCIPM_GPIO, LED0_GPIO_PORT_NUM, LED0_GPIO_BIT_NUM, true);
 //	Chip_GPIO_WriteDirBit(LPC_GPIO, LED1_GPIO_PORT_NUM, LED1_GPIO_BIT_NUM, true);

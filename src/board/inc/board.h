@@ -85,6 +85,11 @@ extern "C" {
 #define PIN_GA1       IOPORT_CREATE_PIN(PORTC,4)
 #define PIN_GA2       IOPORT_CREATE_PIN(PORTC,5)
 
+#define LED_GREEN 0
+#define LED_BLUE 1
+#define LED_RED 2
+
+
 
 /**
  * Button defines

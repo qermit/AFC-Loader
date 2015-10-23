@@ -358,7 +358,7 @@ void IPMI_check_req() {
 
 	ipmiFuncEntry_t * p_ptr = (ipmiFuncEntry_t *) &_ipmi_handlers;
 	ipmiFuncEntry_t current_entry;
-	while (p_ptr >=  &_eipmi_handlers) {
+	while (p_ptr <=  &_eipmi_handlers) {
 		memcpy_P(&current_entry, p_ptr, sizeof(current_entry));
 	    	//DEBUGOUT("Function: %d:%d => %x\r\n", p_ptr->netfn, p_ptr->cmd, p_ptr->process);
 		if(current_entry.netfn == p_ipmi_req->msg.netfn && current_entry.cmd == p_ipmi_req->msg.cmd) {
@@ -373,7 +373,6 @@ void IPMI_check_req() {
 		tmp_src = & p_ipmi_req->saddr;
 		//tmp_src->lun = 0;
 		tmp_dst = & p_ipmi_req->daddr;
-		Board_LED_Toggle(1);
 		current_entry.process(p_ipmi_req, p_ipmi_resp);
 
 	}
