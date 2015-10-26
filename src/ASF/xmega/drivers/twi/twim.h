@@ -69,6 +69,19 @@ extern "C" {
 #include "twi_common.h"
 
 
+/**
+ * \internal
+ *
+ * \brief TWI Master Interrupt Vectors
+ *
+ * The TWI master interrupt request entry points are conditionally compiled
+ * for the TWI interfaces supported by the XMEGA MCU variant.  All of these
+ * entry points call a common service function, twim_interrupt_handler(),
+ * to handle bus events.  This handler uses the bus interface and message
+ * parameters specified in the global \c transfer structure.
+ */
+void twim_interrupt_handler(void);
+
 /*! \brief Error Codes for the Module
  *
  * \deprecated

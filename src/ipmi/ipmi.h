@@ -26,9 +26,11 @@
 
 
 #include <stdint.h>
-#if USE_FREERTOS == 1
+//#if USE_FREERTOS == 1
 #include "FreeRTOS.h"
-#endif
+#include "task.h"
+//#include ""
+//#endif
 
 //#define IPMI_MSG_ADD_DEV_SUPP	0x29	// event receiver, accept sensor cmds
 #define IPMI_MSG_ADD_DEV_SUPP	0x3B	// event receiver, accept sensor cmds
@@ -341,6 +343,18 @@ struct ipmi_msg_data
 	int           data_len;
 };
 
+struct ipmi_pkt_stats 
+{
+	uint8_t in_use;
+	
+	TaskHandle_t alloc_task;
+	TickType_t alloc_time;	
+	
+	TaskHandle_t free_task;
+	TickType_t free_time;
+	
+};
+
 
 struct ipmi_msg
 {
@@ -351,6 +365,7 @@ struct ipmi_msg
 	uint8_t   msg_data[IPMI_MAX_MSG_LENGTH];
 	int retries_left;
 	unsigned char retcode;
+	struct ipmi_pkt_stats stats;
 };
 
 

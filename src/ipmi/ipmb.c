@@ -166,16 +166,22 @@ void IPMB_I2C_EventHandler(I2C_ID_T id, I2C_EVENT_T event)
 
 #endif
 
+void IPMB_send_event_done() {
+	static BaseType_t xHigherPriorityTaskWoken;
+	xHigherPriorityTaskWoken = pdFALSE;
+	xSemaphoreGiveFromISR(ipmi_message_sent_sid, &xHigherPriorityTaskWoken);
+}
+
 TWI_Slave_t slave;
 char readBuffer[24] ;
 void IPMB_event_done() {
 	struct ipmi_msg * p_ipmi_req = NULL;
 	uint8_t decode_result = -1;
-	p_ipmi_req = IPMI_alloc_fromISR();
 	uint8_t i;
 	
 	//if (slave.status != TWIS_STATUS_READY)  return;
 	if (slave.result != TWIS_RESULT_OK)  return;
+	p_ipmi_req = IPMI_alloc_fromISR();
 	
 	seep_data[0] = slave.slave_address;
 	
@@ -264,10 +270,24 @@ static void IPMB_events(I2C_ID_T id, I2C_EVENT_T event)
 	}
 }
 
-ISR(TWIC_TWIS_vect)
+ISR(TWIC_TWIS_vect,ISR_NAKED)
 {
+	portSAVE_CONTEXT();
+	portSwitchToSystem();
 	TWI_SlaveInterruptHandler(&slave);
+	portRESTORE_CONTEXT();
+	asm volatile ("reti");
 }
+
+ISR(TWIC_TWIM_vect,ISR_NAKED)
+{
+	portSAVE_CONTEXT();
+	portSwitchToSystem();
+	twim_interrupt_handler();
+	portRESTORE_CONTEXT();
+	asm volatile ("reti");
+}
+
 
 unsigned char IPMB_slave_addr;
 
@@ -341,6 +361,7 @@ void IPMB_send(struct ipmi_msg * msg) {
 	tmp_xfer_packet.buffer = &i2c_output_buffer[1];
 	tmp_xfer_packet.length = length - 1;
 	tmp_xfer_packet.no_wait = true;
+	tmp_xfer_packet.Process_Data = IPMB_send_event_done;
 #ifdef FREERTOS_CONFIG_H
 	twi_master_write(&TWIC, &tmp_xfer_packet);
 	Board_LED_Toggle(LED_BLUE);

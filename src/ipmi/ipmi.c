@@ -135,6 +135,11 @@ struct ipmi_msg * IPMI_alloc_fromISR() {
 	struct ipmi_msg * retval = NULL;
 	if (xQueueReceiveFromISR(free_msg_queue, &retval , NULL) == pdTRUE ) {
 //		DEBUGOUT("%x\r\n", retval);
+		retval->stats.alloc_time = xTaskGetTickCount();
+		retval->stats.alloc_task = 0;
+		retval->stats.free_time = 0;
+		retval->stats.free_task = 0;
+		retval->stats.in_use = 1;
 		return retval;
 	} else {
 		DEBUGOUT("IPMI allocisr fail\r\n");
@@ -152,6 +157,11 @@ struct ipmi_msg * IPMI_alloc() {
 	if (xQueueReceive(free_msg_queue, &retval , ( TickType_t ) 0) == pdTRUE ) {
 //		DEBUGOUT("%x\r\n", retval);
 		retval->retries_left = 3;
+		retval->stats.alloc_time = xTaskGetTickCount();
+		retval->stats.alloc_task = xTaskGetCurrentTaskHandle();
+		retval->stats.free_time = 0;
+		retval->stats.free_task = 0;
+		retval->stats.in_use = 1;
 		return retval;
 	} else {
 		DEBUGOUT("IPMI alloc fail\r\n");
@@ -176,6 +186,9 @@ struct ipmi_msg * IPMI_alloc() {
 #ifdef FREERTOS_CONFIG_H
 void IPMI_free_fromISR(struct ipmi_msg * msg) {
 	if (msg < ipmi_buff) return;
+	msg->stats.free_time = xTaskGetTickCountFromISR();
+	msg->stats.free_task = 0;
+	msg->stats.in_use = 0;
 	xQueueSendFromISR(free_msg_queue, &msg, NULL);
 	return;
 }
@@ -187,7 +200,9 @@ void IPMI_free_fromISR(struct ipmi_msg * msg) {
 void IPMI_free(struct ipmi_msg * msg) {
 	if (msg < ipmi_buff) return;
 #ifdef FREERTOS_CONFIG_H
-
+	msg->stats.free_time = xTaskGetTickCount();
+	msg->stats.free_task = xTaskGetCurrentTaskHandle();
+	msg->stats.in_use = 0;
 	xQueueSend(free_msg_queue, &msg, (TickType_t) 0);
 	return;
 #else
@@ -455,6 +470,9 @@ void vTaskIPMI( void *pvParmeters )
 		// Wait for the next cycle.
 		//vTaskDelayUntil( &xLastWakeTime, 1 );
 		xActivatedMember = xQueueSelectFromSet( event_set, 1000 / portTICK_PERIOD_MS ); // timeout na 1 sekunde
+		if (xActivatedMember != NULL && xActivatedMember != req_msg_queue) {
+			asm volatile("nop");
+		}
 		xCurrentWakeTime = xTaskGetTickCount();
 		if (xActivatedMember == req_msg_queue) {
 			IPMI_check_req();
@@ -488,9 +506,9 @@ void vTaskIPMI( void *pvParmeters )
 			}
 		}
 
-//		counts[0] = uxQueueMessagesWaiting(req_msg_queue);
-//		counts[1] = uxQueueMessagesWaiting(event_queue_id);
-//		counts[2] = uxQueueMessagesWaiting(free_msg_queue);
+		counts[0] = uxQueueMessagesWaiting(req_msg_queue);
+		counts[1] = uxQueueMessagesWaiting(event_queue_id);
+		counts[2] = uxQueueMessagesWaiting(free_msg_queue);
 //		DEBUGOUT("MEM stat = %d %d %d\r\n", counts[0], counts[1], counts[2]);
 
 		if (_ipmi_state_req == IPMI_STATE_IDLE  && _ipmi_state_event != IPMI_STATE_SEND_EVENT) {

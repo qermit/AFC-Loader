@@ -63,21 +63,10 @@ static struct
 } transfer;
 
 
-/**
- * \internal
- *
- * \brief TWI Master Interrupt Vectors
- *
- * The TWI master interrupt request entry points are conditionally compiled
- * for the TWI interfaces supported by the XMEGA MCU variant.  All of these
- * entry points call a common service function, twim_interrupt_handler(),
- * to handle bus events.  This handler uses the bus interface and message
- * parameters specified in the global \c transfer structure.
- */
-static void twim_interrupt_handler(void);
+
 
 #ifdef TWIC
-ISR(TWIC_TWIM_vect) { twim_interrupt_handler(); }
+//ISR(TWIC_TWIM_vect) { twim_interrupt_handler(); }
 #endif
 #ifdef TWID
 ISR(TWID_TWIM_vect) { twim_interrupt_handler(); }
@@ -211,6 +200,7 @@ static inline void twim_write_handler(void)
 
 		bus->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 		transfer.status = STATUS_OK;
+		transfer.pkg->Process_Data();
 	}
 }
 
@@ -261,7 +251,7 @@ static inline void twim_read_handler(void)
  *
  *  Check current status and calls the appropriate handler.
  */
-static void twim_interrupt_handler(void)
+void twim_interrupt_handler(void)
 {
 	uint8_t const master_status = transfer.bus->MASTER.STATUS;
 

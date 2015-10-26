@@ -108,6 +108,7 @@ typedef struct
   void *buffer;
   //! How many bytes do we want to write.
   unsigned int length;
+  void (*Process_Data) (void);                    /*!< Pointer to process data function*/
   //! Whether to wait if bus is busy (false) or return immediately (true)
   bool no_wait;
 } twi_package_t;
