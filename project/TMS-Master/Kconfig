@@ -1,0 +1,29 @@
+#
+# Network configuration
+#
+
+menuconfig PROJECT_TMS_MASTER
+	bool "TMS Master project"
+	---help---
+	  Unless you really know what you are doing, you should say Y here.
+	  The reason is that some programs need kernel networking support even
+	  when running on a stand-alone machine that isn't connected to any
+	  other computer.
+	  
+if PROJECT_TMS_MASTER
+
+config PROJECT_TMS_MASTER_BUILD_USERCODE
+	bool "Usercode"
+	help
+	  This option can be selected by other options that need compat
+	  netlink messages.
+
+config PROJECT_TMS_MASTER_BUILD_FPGA
+	bool "FPGA"
+	help
+	  This option can be selected by other options that need compat
+	  netlink messages.
+
+
+endif   # if PROJECT_TMS_MASTER
+

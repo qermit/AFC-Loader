@@ -1,0 +1,248 @@
+#
+# File system configuration
+#
+mainmenu "JAMMCI"
+
+
+menu "Board selection"
+
+choice BOARD
+	prompt "Board"
+	default BOARD_AFC
+
+config BOARD_AFC
+        bool "AMC FMC CARRIER"
+	select FMC_COUNT_2
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_MATPEX
+        bool "MATPEX"
+	select MCU_ATXMEGA128A1U
+	select ARCH_ATXMEGA
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_CUSTOM
+        bool "Custom board"
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+endchoice
+
+
+
+if BOARD_AFC
+
+comment "AMC FMC CARRIER"
+
+config BOARD_AFC_V2
+        bool "AMC FMC CARRIER V2"
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_AFC_V3
+        bool "AMC FMC CARRIER V3"
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_AFC_V3_1
+        bool "AMC FMC CARRIER v3.1"
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_AFCK
+        bool "AMC FMC CARRIER KINTEX"
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+choice
+        prompt "AFC Implementation"
+        default BOARD_AFC_LPC
+
+config BOARD_AFC_ATMEL
+        bool "ATMEL implementation"
+	select ARCH_ATXMEGA
+	select MCU_ATXMEGA128A1U
+        help
+          The original ARC ISA of ARC600/700 cores
+
+config BOARD_AFC_LPC
+        bool "LPC implementation"
+	select ARCH_CORTEX_M3
+	select MCU_LPC1764
+        help
+          ISA for the Next Generation ARC-HS cores
+
+endchoice
+
+endif
+
+
+#endmenu
+
+#menu "Architecture and MCU"
+
+comment "Architecture"
+
+choice 
+	prompt "Microcontroler selection"
+	default ARCH_CORTEX_M3 if BOARD_AFC_LPC
+	default ARCH_ATXMEGA if BOARD_MATPEX
+	default ARCH_ATXMEGA if BOARD_AFC_ATMEL
+
+
+config ARCH_CORTEX_M3
+	depends on (BOARD_AFC_LPC || BOARD_CUSTOM)
+	bool "ARM Cortex M3"
+
+
+config ARCH_ATXMEGA
+	depends on (BOARD_CUSTOM || BOARD_AFC_ATMEL || BOARD_MATPEX)
+	bool "ATxmega architecture"
+
+
+
+endchoice
+
+comment "Microcontroler"
+
+choice
+	prompt "Microcontroler selection"
+#	default MCU_LPC1764 if BOARD_AFC_LPC
+#	default MCU_ATXMEGA128A1U if BOARD_MATPEX
+#	default MCU_ATXMEGA128A1U if BOARD_AFC_ATMEL
+
+config MCU_LPC1764
+	bool "LPC1764"
+	depends on ARCH_CORTEX_M3
+
+config MCU_ATXMEGA128A1U
+	bool "ATxmega 128A1U"
+	depends on ARCH_ATXMEGA
+
+endchoice
+	
+comment "Interconnections"
+
+choice
+	depends on BOARD_CUSTOM
+	prompt "Custom fmc count"
+
+config FMC_COUNT_CUSTOM_0
+	bool "0"
+	select FMC_COUNT_0
+
+config FMC_COUNT_CUSTOM_1
+	bool "3"
+	select FMC_COUNT_1
+
+config FMC_COUNT_CUSTOM_2
+	bool "2"
+	select FMC_COUNT_2
+
+endchoice
+
+config FMC_COUNT_0
+	bool
+	default true if FMC_COUNT_CUSTOM=0
+
+config FMC_COUNT_1
+	bool
+	default true if FMC_COUNT_CUSTOM=1
+
+config FMC_COUNT_2
+	bool
+	default true if FMC_COUNT_CUSTOM=2
+
+
+config FMC_COUNT
+	int
+	default 2 if FMC_COUNT_2
+	default 1 if FMC_COUNT_1
+	default 0 if FMC_COUNT_0
+
+if (FMC_COUNT > 0)
+comment "FMC0"
+
+config FMC0_USERCONFIG
+	bool "Overite default FMC0 parameters"
+
+config FMC0_VADJ_MIN
+	depends on FMC0_USERCONFIG
+	int "Minimal VADJ voltage"
+	default 1800
+
+config FMC0_VADJ_MAX
+	depends on FMC0_USERCONFIG
+	int "Maximal VADJ voltage"
+	default 3300
+endif
+
+if (FMC_COUNT > 1)
+comment "FMC1"
+
+config FMC1_USERCONFIG
+	bool "Overite default FMC0 parameters"
+
+config FMC1_VADJ_MIN
+	depends on FMC1_USERCONFIG
+	int "Minimal VADJ voltage"
+
+config FMC1_VADJ_MAX
+	depends on FMC1_USERCONFIG
+	int "Maximal VADJ voltage"
+
+endif
+
+endmenu
+
+
+config ARCH
+	string
+	default "cortex-m3" if ARCH_CORTEX_M3
+	default "atxmega" if ARCH_ATXMEGA
+
+config MCU
+	string
+	default "lpc1764" if MCU_LPC1764
+	default "atxmega128a1u" if MCU_ATXMEGA128A1U
+
+
+config FREERTOS
+	bool "Use Freertos core"
+
+choice
+	prompt "Project type"
+
+config PROJECT_EMMC
+	select IPMI_IPMB
+	bool "EMMC"
+
+config PROJECT_MCH
+	bool "MCH"
+
+config PROJECT_STANDALONE
+	bool "Standalone"
+
+endchoice
+
+
+config IPMI_IPMB
+	bool "IPMB layer for IPMI"
+
+
+source drivers/Kconfig
+
+menu "Project"
+
+source project/Kconfig
+
+endmenu

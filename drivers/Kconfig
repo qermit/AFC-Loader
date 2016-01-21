@@ -1,0 +1,51 @@
+
+menu Drivers
+
+config DRIVER_HAL_I2C
+	def_bool n
+
+config DRIVER_HAL_SPI
+	def_bool n
+
+config DRIVER_HAL_GPIO
+	def_bool n
+
+if ARCH_AVRXMEGA
+
+config DRIVER_AVRXMEGA_GPIO
+	bool "AVR xmega gpio driver"
+	select DIVER_HAL_GPIO
+
+endif
+
+if MCU_LPC1764
+
+config DRIVER_LPC1764_GPIO
+	bool "LPC1764 gpio driver"
+	select DRIVER_HAL_GPIO
+
+config DRIVER_LPC1764_I2C
+	bool "LPC1764 gpio driver"
+	select DRIVER_HAL_I2C
+
+endif
+
+comment "I2C chips"
+
+config DRIVER_I2C_MUX
+	bool "I2C MUX"
+	depends on DRIVER_HAL_I2C
+
+config DRIVER_I2C_MCP79410
+	bool "MCP79410 i2c RTCC"
+	depends on DRIVER_HAL_I2C
+
+#submenu
+
+config DRIVER_I2C_MCP79410_BOARDDETECT
+	bool "MCP79410 based board type detection"
+	depends on DRIVER_I2C_MCP79410
+
+#endsubmenu
+
+endmenu
