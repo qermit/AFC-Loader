@@ -275,8 +275,8 @@ void Board_Audio_Init(LPC_I2S_T *pI2S, int micIn)
 	I2S_Config.SampleRate = 48000;
 	I2S_Config.ChannelNumber = 2;	/* 1 is mono, 2 is stereo */
 	I2S_Config.WordWidth =  16;		/* 8, 16 or 32 bits */
-	Chip_I2S_Init(pI2S);
-	Chip_I2S_TxConfig(pI2S, &I2S_Config);
+//	Chip_I2S_Init(pI2S);
+//	Chip_I2S_TxConfig(pI2S, &I2S_Config);
 }
 
 /* Sets up board specific I2C interface */

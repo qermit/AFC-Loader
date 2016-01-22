@@ -52,6 +52,13 @@ HOSTCXX      = g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
 HOSTCXXFLAGS = -O2
 
+KBUILD_MODULES :=
+KBUILD_BUILTIN := 1
+
+
+export KBUILD_MODULES KBUILD_BUILTIN
+export KBUILD_CHECKSRC KBUILD_SRC KBUILD_EXTMOD
+
 
 ifeq ("$(origin C)", "command line")
   KBUILD_CHECKSRC = $(C)
@@ -87,6 +94,21 @@ VPATH           := $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
 
 export srctree objtree VPATH
 
+SUBARCH		= $(CONFIG_ARCH)
+
+
+
+ARCH            ?= $(SUBARCH)
+CROSS_COMPILE   ?= $(CONFIG_CROSS_COMPILE:"%"=%)
+CONFIG_ARCH	?=
+MCU		?= $(CONFIG_MCU:"%"=%)
+MCPU		?= $(CONFIG_CPU:"%"=%)
+
+ifeq ($(SUBARCH),armv7-m)
+	ARCH := arm
+endif
+
+
 
 
 scripts/Kbuild.include: ;
@@ -120,7 +142,21 @@ AFLAGS_KERNEL   =
 CFLAGS_GCOV     = -fprofile-arcs -ftest-coverage
 
 
+LINUXINCLUDE := \
+	$(if $(KBUILD_SRC), -I$(srctree)/include) \
+	-Iinclude \
+	-Isrc \
+	-Iinclude/FreeRTOS \
+	-Isrc/board/inc \
+	-Isrc/chip/inc \
+	-IFreeRTOS/include \
+	-IFreeRTOS/portable/GCC/ARM_CM3 \
+	-include $(srctree)/include/kconfig.h
 
+
+
+KBUILD_CFLAGS = -mcpu=$(MCPU) -mthumb
+LDFLAGS_jammci += --gc-sections
 
 export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
 export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
@@ -135,6 +171,7 @@ export KBUILD_AFLAGS_MODULE KBUILD_CFLAGS_MODULE KBUILD_LDFLAGS_MODULE
 export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
 export KBUILD_ARFLAGS
 
+export MCPU MCU
 
 
 # Basic helpers built in scripts/
@@ -237,17 +274,11 @@ ifeq ($(KBUILD_EXTMOD),)
 # Carefully list dependencies so we do not try to build scripts twice
 # in parallel
 PHONY += scripts
-scripts: scripts_basic include/config/auto.conf include/config/tristate.conf \
-	 asm-generic
+scripts: scripts_basic include/config/auto.conf include/config/tristate.conf
 	$(Q)$(MAKE) $(build)=$(@)
 
 # Objects we will link into vmlinux / subdirs we need to visit
-init-y		:= init/
-drivers-y	:= drivers/ sound/ firmware/
-net-y		:= net/
-libs-y		:= lib/
-core-y		:= usr/
-virt-y		:= virt/
+core-y		:= core/ FreeRTOS/ src/
 endif # KBUILD_EXTMOD
 
 ifeq ($(dot-config),1)
@@ -289,11 +320,61 @@ else
 include/config/auto.conf: ;
 endif # $(dot-config)
 
-PHONY += jammci
-jammci:
-	$(Q)echo Not finished yet
 
-all: jammci
+ifeq ($(KBUILD_EXTMOD),)
+
+jammci-dirs    := $(patsubst %/,%,$(filter %/, $(core-y) $(core-m)))
+
+jammci-alldirs := $(sort $(vmlinux-dirs) $(patsubst %/,%,$(filter %/, \
+			$(core-))))
+
+core-y          := $(patsubst %/, %/built-in.o, $(core-y))
+
+export KBUILD_JAMMCI_CORE := $(core-y)
+export KBUILD_LDS          := linker/afc.lds
+
+jammci-deps := $(KBUILD_LDS) $(KBUILD_JAMMCI_CORE)
+
+      cmd_link-jammci = $(CONFIG_SHELL) $< $(LD) $(LDFLAGS) $(LDFLAGS_jammci)
+quiet_cmd_link-jammci = LINK    $@
+
+
+echo: ;
+
+jammci: scripts/link-jammci.sh $(jammci-deps) FORCE
+	+$(call if_changed,link-jammci)
+
+$(sort $(jammci-deps)): $(jammci-dirs);
+
+
+#NOSTDINC_FLAGS += -nostdinc -isystem $(shell $(CC) -print-file-name=include)
+NOSTDINC_FLAGS += -isystem $(shell $(CC) -print-file-name=include)
+CHECKFLAGS     += $(NOSTDINC_FLAGS)
+
+ifdef CONFIG_FREERTOS
+
+CC_USE_FREERTOS := $(call cc-option, -DUSE_FREERTOS=1)
+
+endif
+
+CC_JAMMCI_FLAGS := $(call cc-option, -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCR_INTEGER_PRINTF -D__LPC17XX__ -D__REDLIB__)
+
+#-DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCR_INTEGER_PRINTF -D__LPC17XX__ -D__REDLIB__ -DUSE_FREERTOS=1 -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\src\board\inc" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\src\chip\inc" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\src" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\FreeRTOS\include" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\FreeRTOS\portable\GCC\ARM_CM3" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__REDLIB__ -specs=redlib.specs
+
+KBUILD_CFLAGS += $(CC_USE_FREERTOS) $(CC_JAMMCI_FLAGS)
+
+prepare:
+
+test-echo:
+	$(Q)echo MCPU=$(MCPU)
+	$(Q)echo FLAGS=$(KBUILD_CFLAGS)
+
+PHONY += $(jammci-dirs)
+$(jammci-dirs): prepare
+	$(Q)$(MAKE) $(build)=$@
+
+all: test-echo jammci
+endif # KBUILD_EXTMOD
 
 
 clean: $(clean-dirs)

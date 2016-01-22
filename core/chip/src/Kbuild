@@ -1,0 +1,7 @@
+obj-y := chip_17xx_40xx.o
+obj-y += clock_17xx_40xx.o
+obj-y += i2c_17xx_40xx.o
+obj-y += iocon_17xx_40xx.o
+obj-y += ssp_17xx_40xx.o
+obj-y += sysinit_17xx_40xx.o
+obj-y += uart_17xx_40xx.o

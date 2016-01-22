@@ -1,0 +1,2 @@
+
+obj-$(CONFIG_ARCH_CORTEX_M3) := ARM_CM3/

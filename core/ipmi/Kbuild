@@ -1,0 +1,7 @@
+obj-y := fru.o
+obj-y += ipmb.o
+obj-y += ipmi.o
+obj-y += ipmi_handlers.o
+obj-y += ipmi_oem.o
+obj-y += payload.o
+obj-y += sdr.o

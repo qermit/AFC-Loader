@@ -1,6 +1,9 @@
 
 menu Drivers
 
+config DRIVER_HAL_BOARDAUTODETECT
+	def_bool n
+
 config DRIVER_HAL_I2C
 	def_bool n
 
@@ -45,6 +48,7 @@ config DRIVER_I2C_MCP79410
 config DRIVER_I2C_MCP79410_BOARDDETECT
 	bool "MCP79410 based board type detection"
 	depends on DRIVER_I2C_MCP79410
+	select DRIVER_HAL_BOARDAUTODETECT
 
 #endsubmenu
 

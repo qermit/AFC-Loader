@@ -1,0 +1,4 @@
+
+obj-y := bootloader_lpcxpresso_1769.o  crp.o  cr_startup_lpc175x_6x.o  sysinit.o
+
+obj-y += ipmi/ ic/ chip/ board/ afc/

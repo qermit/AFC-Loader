@@ -1,0 +1,3 @@
+
+obj-y := tasks.o queue.o list.o
+obj-y += portable/
