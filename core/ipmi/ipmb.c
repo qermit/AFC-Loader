@@ -26,13 +26,10 @@
 #include "ipmi.h"
 #include "board_api.h"
 
-#if USE_FREERTOS == 1
-#warning "MMC Verion"
+#ifdef CONFIG_FREERTOS
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
-#else
-#warning "BOOTLOADER Verion"
 #endif
 
 //static struct ipmi_msg * current_msg
@@ -140,7 +137,7 @@ static uint8_t i2c_output_buffer[32 + 1];
 //void Board_LED_Toggle(uint8_t LEDNumber);
 //int IPMB_I2C_EventHandler_done = 0;
 
-#if USE_FREERTOS == 1
+#ifdef CONFIG_FREERTOS
 extern SemaphoreHandle_t ipmi_message_sent_sid;
 
 

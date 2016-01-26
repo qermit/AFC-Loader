@@ -46,13 +46,10 @@
 #include "ipmi/payload.h"
 #include "afc/board_version.h"
 
-#ifdef USE_FREERTOS == 1
-#warning "MMC Verion"
+#ifdef CONFIG_FREERTOS
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
-#else
-#warning "BOOTLOADER Verion"
 #endif
 
 #define DELAY_PERIOD 1000

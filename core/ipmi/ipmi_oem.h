@@ -22,7 +22,7 @@
 #ifndef IPMI_IPMI_OEM_H_
 #define IPMI_IPMI_OEM_H_
 
-#if USE_FREERTOS == 1
+#ifdef CONFIG_FREERTOS
 #include "board.h"
 #include "semphr.h"
 #endif
@@ -35,7 +35,7 @@
 #define IPMI_AFC_CMD_CLOCK_CROSSBAR_SET		0x03
 
 struct I2C_Mutex {
-#if USE_FREERTOS == 1
+#ifdef CONFIG_FREERTOS
 	SemaphoreHandle_t semaphore;
 	TickType_t start_time;
 #endif

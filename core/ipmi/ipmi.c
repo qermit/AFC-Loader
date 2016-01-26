@@ -25,7 +25,7 @@
 #include "sdr.h"
 #include <string.h>
 
-#if USE_FREERTOS == 1
+#ifdef CONFIG_FREERTOS
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
@@ -370,9 +370,9 @@ void IPMI_check_req() {
 		ipmi_general_invalid(p_ipmi_req, p_ipmi_resp);
 		//p_ipmi_resp->retcode = IPMI_CC_INV_CMD;
 	} else {
-		tmp_src = & p_ipmi_req->saddr;
+		tmp_src = (struct ipmi_ipmb_addr *) & p_ipmi_req->saddr;
 		//tmp_src->lun = 0;
-		tmp_dst = & p_ipmi_req->daddr;
+		tmp_dst = (struct ipmi_ipmb_addr *) & p_ipmi_req->daddr;
 
 		p_ptr->process(p_ipmi_req, p_ipmi_resp);
 

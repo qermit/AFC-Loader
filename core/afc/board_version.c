@@ -22,8 +22,8 @@
 #include "board.h"
 #include "board_version.h"
 #include "../ipmi/ipmb.h"
-#if USE_FREERTOS == 1
 
+#ifdef CONFIG_FREERTOS
 #include <FreeRTOS.h>
 #include <semphr.h>
 
@@ -63,7 +63,7 @@ struct i2c_bus_mapping {
 struct i2c_mux_state {
 	I2C_ID_T i2c_interface;
 	int8_t state;
-#if USE_FREERTOS == 1
+#ifdef CONFIG_FREERTOS
 	SemaphoreHandle_t semaphore;
 	TickType_t start_time;
 #endif

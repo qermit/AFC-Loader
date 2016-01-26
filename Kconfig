@@ -3,96 +3,109 @@
 #
 mainmenu "JAMMCI"
 
-config CROSS_COMPILE
-	string "Cross-compiler tool prefix"
+choice
+	prompt "Microcontroler selection"
 
-menu "Board selection"
+config MCU_LPC1769
+	bool "LPC1769"
+	select MCU_LPC176X
 
+config MCU_LPC1764
+	bool "LPC1764"
+	select MCU_LPC176X
 
-choice BOARD
-	prompt "Board"
-	default BOARD_AFC
-
-config BOARD_AFC
-        bool "AMC FMC CARRIER"
-	select FMC_COUNT_2
-        ---help---
-        Select this option to use the format that corresponds to your GCC
-        version.
-
-config BOARD_MATPEX
-        bool "MATPEX"
-	select MCU_ATXMEGA128A1U
-	select ARCH_ATXMEGA
-        ---help---
-        Select this option to use the format that corresponds to your GCC
-        version.
-
-config BOARD_CUSTOM
-        bool "Custom board"
-        ---help---
-        Select this option to use the format that corresponds to your GCC
-        version.
+config MCU_ATXMEGA128A1U
+	bool "ATxmega 128A1U"
+	select MCU_AVRXMEGA
 
 endchoice
 
 
+config MCU_LPC176X
+	def_bool n
+	select CPU_CORTEX_M3
 
-if BOARD_AFC
+config MCU_ATXMEGA
+	def_bool n
+	select CPU_AVRXMEGA
+
+
+choice 
+	prompt "Cross-compiler"
+	default CROSS_COMPILE_ARM
+
+config CROSS_COMPILE_ARM
+	depends on CPU_CORTEX_M3
+	bool "ARM"
+
+config CROSS_COMPILE_AVR
+	depends on CPU_AVRXMEGA
+	bool "AVR"
+
+config CROSS_COMPILE_CUSTOM
+	bool "Custom value"
+
+endchoice
+
+config CROSS_COMPILE
+	string "Custom cross-compiler prefix"
+	depends on CROSS_COMPILE_CUSTOM
+
+config CROSS_COMPILE_FIXED
+	string
+	default "" if CROSS_COMPILE_CUSTOM
+	default "arm-none-eabi-" if CROSS_COMPILE_ARM
+	default "avr-none-eabi-" if CROSS_COMPILE_AVR
+
+
+
+menu "Board selection"
+
+
+config BOARD_AFC
+	select FMC_COUNT_2
+	def_bool n
+
+config BOARD_AFC_V1
+	select BOARD_AFC
+	def_bool n
 
 config BOARD_AFC_V2
+	select BOARD_AFC
 	def_bool n
 
 config BOARD_AFC_V3
+	select BOARD_AFC
 	def_bool n
 
 config BOARD_AFC_V3_1
+	select BOARD_AFC
 	def_bool n
 
 config BOARD_AFCK
+	select BOARD_AFC
+	def_bool n
+
+config BOARD_MATPEX
+	select FMC_COUNT_0
+	def_bool n
+
+config BOARD_CUSTOM
+	select FMC_COUNT_CUSTOM
 	def_bool n
 
 
-config BOARD_FIXED_AFC_V2
-        bool "AMC FMC CARRIER V2"
-	depends on (DRIVER_HAL_BOARDAUTODETECT && BOARD_AFC)
-	select BOARD_AFC_V2
+config BOARD_AUTODETECT_AFC_V1
+        bool "AMC FMC CARRIER V1"
+	depends on (DRIVER_HAL_BOARDAUTODETECT && (MCU_LPC176X || MCU_ATXMEGA128A1U))
+	select BOARD_AFC_V1
         ---help---
         Select this option to use the format that corresponds to your GCC
         version.
-
-config BOARD_FIXED_AFC_V3
-        bool "AMC FMC CARRIER V3"
-	depends on (DRIVER_HAL_BOARDAUTODETECT && BOARD_AFC)
-	select BOARD_AFC_V3
-        ---help---
-        Select this option to use the format that corresponds to your GCC
-        version.
-
-config BOARD_FIXED_AFC_V3_1
-        bool "AMC FMC CARRIER v3.1"
-	depends on (DRIVER_HAL_BOARDAUTODETECT && BOARD_AFC)
-	select BOARD_AFC_V3_1
-	---help---
-	Select this option to use the format that corresponds to your GCC
-	version.
-
-config BOARD_FIXED_AFCK
-        bool "AMC FMC CARRIER KINTEX"
-	depends on (DRIVER_HAL_BOARDAUTODETECT && BOARD_AFC)
-	select BOARD_AFCK
-        ---help---
-        Select this option to use the format that corresponds to your GCC
-        version.
-
-
-if (DRIVER_HAL_BOARDAUTODETECT=n && BOARD_AFC)
-
-choice  
-	prompt "Fixed support"
 
 config BOARD_AUTODETECT_AFC_V2
         bool "AMC FMC CARRIER V2"
+	depends on (DRIVER_HAL_BOARDAUTODETECT && (MCU_LPC176X || MCU_ATXMEGA128A1U))
 	select BOARD_AFC_V2
         ---help---
         Select this option to use the format that corresponds to your GCC
@@ -100,6 +113,7 @@ config BOARD_AUTODETECT_AFC_V2
 
 config BOARD_AUTODETECT_AFC_V3
         bool "AMC FMC CARRIER V3"
+	depends on (DRIVER_HAL_BOARDAUTODETECT && (MCU_LPC176X || MCU_ATXMEGA128A1U))
 	select BOARD_AFC_V3
         ---help---
         Select this option to use the format that corresponds to your GCC
@@ -107,39 +121,90 @@ config BOARD_AUTODETECT_AFC_V3
 
 config BOARD_AUTODETECT_AFC_V3_1
         bool "AMC FMC CARRIER v3.1"
+	depends on (DRIVER_HAL_BOARDAUTODETECT && (MCU_LPC176X || MCU_ATXMEGA128A1U))
 	select BOARD_AFC_V3_1
-        ---help---
-        Select this option to use the format that corresponds to your GCC
-        version.
+	---help---
+	Select this option to use the format that corresponds to your GCC
+	version.
 
 config BOARD_AUTODETECT_AFCK
         bool "AMC FMC CARRIER KINTEX"
+	depends on (DRIVER_HAL_BOARDAUTODETECT && (MCU_LPC176X || MCU_ATXMEGA128A1U))
 	select BOARD_AFCK
         ---help---
         Select this option to use the format that corresponds to your GCC
         version.
 
-endchoice
+config BOARD_AUTODETECT_MATPEX
+	bool "MATPEX"
+	select BOARD_MATPEX
+	depends on (DRIVER_HAL_BOARDAUTODETECT && MCU_ATXMEGA128A1U)
 
-endif
+config BOARD_AUTODETECT_CUSTOM
+	bool "Custom board"
+	select BOARD_CUSTOM
+	depends on (DRIVER_HAL_BOARDAUTODETECT)
 
-choice
-        prompt "AFC Implementation"
-        default BOARD_AFC_LPC
 
-config BOARD_AFC_ATMEL
-        bool "ATMEL implementation"
-	select ARCH_ATXMEGA
-	select MCU_ATXMEGA128A1U
-        help
-          The original ARC ISA of ARC600/700 cores
+if (DRIVER_HAL_BOARDAUTODETECT=n)
 
-config BOARD_AFC_LPC
-        bool "LPC implementation"
-	select CPU_CORTEX_M3
-	select MCU_LPC1764
-        help
-          ISA for the Next Generation ARC-HS cores
+choice  
+	prompt "Fixed support"
+
+config BOARD_FIXED_AFC_V1
+        bool "AMC FMC CARRIER V1"
+	depends on (MCU_LPC176X || MCU_ATXMEGA128A1U)
+	select BOARD_AFC_V1
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_FIXED_AFC_V2
+        bool "AMC FMC CARRIER V2"
+	depends on (MCU_LPC176X || MCU_ATXMEGA128A1U)
+	select BOARD_AFC_V2
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_FIXED_AFC_V3
+        bool "AMC FMC CARRIER V3"
+	depends on (MCU_LPC176X || MCU_ATXMEGA128A1U)
+	select BOARD_AFC_V3
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_FIXED_AFC_V3_1
+        bool "AMC FMC CARRIER v3.1"
+	depends on (MCU_LPC176X || MCU_ATXMEGA128A1U)
+	select BOARD_AFC_V3_1
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_FIXED_AFCK
+        bool "AMC FMC CARRIER KINTEX"
+	depends on (MCU_LPC176X || MCU_ATXMEGA128A1U)
+	select BOARD_AFCK
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_FIXED_MATPEX
+        bool "MATPEX"
+	depends on (MCU_ATXMEGA128A1U)
+	select BOARD_MATPEX
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
+
+config BOARD_FIXED_CUSTOM
+        bool "Custom board"
+	select BOARD_CUSTOM
+        ---help---
+        Select this option to use the format that corresponds to your GCC
+        version.
 
 endchoice
 
@@ -148,39 +213,6 @@ endif
 
 #endmenu
 
-choice
-	prompt "Microcontroler selection"
-	default MCU_LPC1764 if BOARD_AFC_LPC
-	default MCU_ATXMEGA128A1U if BOARD_MATPEX
-	default MCU_ATXMEGA128A1U if BOARD_AFC_ATMEL
-
-config MCU_LPC1769
-	bool "LPC1769"
-	depends on (BOARD_CUSTOM || BOARD_AFC_LPC)
-	select MCU_LPC176X
-
-config MCU_LPC1764
-	bool "LPC1764"
-	depends on (BOARD_CUSTOM || BOARD_AFC_LPC)
-	select MCU_LPC176X
-
-config MCU_ATXMEGA128A1U
-	bool "ATxmega 128A1U"
-	depends on (BOARD_CUSTOM || BOARD_AFC_ATMEL || BOARD_MATPEX)
-	select ARCH_ATXMEGA
-
-endchoice
-
-config MCU_LPC176X
-	def_bool n
-	select CPU_CORTEX_M3
-
-config CPU_ATXMEGA
-	def_bool n
-	select CPU_CORTEX_M3
-
-config ARCH_ATXMEGA
-	def_bool n
 	
 comment "Interconnections"
 
@@ -247,10 +279,13 @@ config FMC1_USERCONFIG
 config FMC1_VADJ_MIN
 	depends on FMC1_USERCONFIG
 	int "Minimal VADJ voltage"
+	default 1800
 
 config FMC1_VADJ_MAX
 	depends on FMC1_USERCONFIG
 	int "Maximal VADJ voltage"
+	default 3300
+
 
 endif
 

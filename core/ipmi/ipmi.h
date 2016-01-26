@@ -26,7 +26,7 @@
 
 
 #include <stdint.h>
-#if USE_FREERTOS == 1
+#ifdef CONFIG_FREERTOS
 #include "FreeRTOS.h"
 #endif
 
@@ -552,7 +552,7 @@ void vTaskIPMI( void *pvParmeters );
 
 void IPMI_init();
 
-#ifdef FREERTOS_CONFIG_H
+#ifdef CONFIG_FREERTOS
 struct ipmi_msg * IPMI_alloc_fromISR();
 void IPMI_free_fromISR(struct ipmi_msg * msg);
 int IPMI_req_queue_append_fromISR(struct ipmi_msg * msg);
@@ -571,7 +571,7 @@ int IPMI_event_queue_append(struct ipmi_msg * msg);
 void IPMI_req_queue_pushback(struct ipmi_msg * msg);
 struct ipmi_msg * IPMI_req_queue_get();
 
-#if USE_FREERTOS == 1
+#ifdef CONFIG_FREERTOS
 TickType_t getTickDifference(TickType_t current_time, TickType_t start_time) ;
 #endif
 

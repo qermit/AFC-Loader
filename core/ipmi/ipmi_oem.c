@@ -50,8 +50,8 @@ void EINT2_IRQHandler(void) {
 	NVIC_DisableIRQ(EINT2_IRQn);
 
 			struct ipmi_msg *pmsg = IPMI_alloc();
-		    struct ipmi_ipmb_addr *dst_addr = &pmsg->daddr;
-		    struct ipmi_ipmb_addr *src_addr = &pmsg->saddr;
+		    struct ipmi_ipmb_addr *dst_addr = (struct ipmi_ipmb_addr *) &pmsg->daddr;
+		    struct ipmi_ipmb_addr *src_addr = (struct ipmi_ipmb_addr *) &pmsg->saddr;
 
 		    IPMI_evet_get_address(src_addr, dst_addr);
 

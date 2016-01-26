@@ -99,7 +99,34 @@ SUBARCH		= $(CONFIG_ARCH)
 
 
 ARCH            ?= $(SUBARCH)
-CROSS_COMPILE   ?= $(CONFIG_CROSS_COMPILE:"%"=%)
+
+
+#ifeq ($(CROSS_COMPILE),) 
+#CROSS_COMPILE := echo chuj
+#ifeq ($(CONFIG_CROSS_COMPILE_CUSTOM),1)
+#CROSS_COMPILE = echo dupa
+#endif
+#endif
+CROSS_COMPILE ?= $(CONFIG_CROSS_COMPILE_FIXED:"%"=%)$(CONFIG_CROSS_COMPILE:"%"=%)
+#CROSS_COMPILE_F ?= $(CROSS_COMPILE)
+#ifeq ($(CROSS_COMPILE_F),)
+#CROSS_COMPILE_F = $(CONFIG_CROSS_COMPILE)
+#endif
+#ifeq ($(CROSS_COMPILE_F),)
+#CROSS_COMPILE_F = $(CONFIG_CROSS_COMPILE_FIXED)
+#endif
+#ifeq ($(CONFIG_CROSS_COMPILE_FIXED),)
+#CROSS_COMPILE_F   ?= $(CONFIG_CROSS_COMPILE:"%"=%)
+#else
+#CROSS_COMPILE_F	?= $(CONFIG_CROSS_COMPILE_FIXED:"%"=%)
+#endif
+
+#CROSS_COMPILE = $(CROSS_COMPILE_F)
+
+
+#else
+#CROSS_COMPILE   ?= $(CONFIG_CROSS_COMPILE:"%"=%)
+#endif
 CONFIG_ARCH	?=
 MCU		?= $(CONFIG_MCU:"%"=%)
 MCPU		?= $(CONFIG_CPU:"%"=%)
@@ -107,6 +134,8 @@ MCPU		?= $(CONFIG_CPU:"%"=%)
 ifeq ($(SUBARCH),armv7-m)
 	ARCH := arm
 endif
+
+
 
 
 
@@ -144,19 +173,20 @@ CFLAGS_GCOV     = -fprofile-arcs -ftest-coverage
 
 LINUXINCLUDE := \
 	$(if $(KBUILD_SRC), -I$(srctree)/include) \
-	-Iinclude \
-	-Isrc \
-	-Iinclude/FreeRTOS \
-	-Isrc/board/inc \
-	-Isrc/chip/inc \
-	-IFreeRTOS/include \
-	-IFreeRTOS/portable/GCC/ARM_CM3 \
+	-I$(srctree)/include \
+	-I$(srctree)/include/FreeRTOS \
+	-I$(srctree)/core \
+	-I$(srctree)/core/board/inc \
+	-I$(srctree)/core/chip/inc \
+	-I$(srctree)/FreeRTOS/include \
+	-I$(srctree)/FreeRTOS/portable/GCC/ARM_CM3 \
 	-include $(srctree)/include/kconfig.h
 
 
 
+
 KBUILD_CFLAGS = -mcpu=$(MCPU) -mthumb
-LDFLAGS_jammci += --gc-sections
+#LDFLAGS_jammci += --gc-sections -lgcc -lc -lm
 
 export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
 export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
@@ -171,7 +201,7 @@ export KBUILD_AFLAGS_MODULE KBUILD_CFLAGS_MODULE KBUILD_LDFLAGS_MODULE
 export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
 export KBUILD_ARFLAGS
 
-export MCPU MCU
+export MCPU MCU LDFLAGS_jammci
 
 
 # Basic helpers built in scripts/
@@ -256,6 +286,9 @@ ifeq ($(config-targets),1)
 # KBUILD_DEFCONFIG may point out an alternative default configuration
 # used for 'make defconfig'
 #include arch/$(SRCARCH)/Makefile
+
+
+
 export KBUILD_DEFCONFIG KBUILD_KCONFIG
 
 config: scripts_basic outputmakefile FORCE
@@ -278,7 +311,7 @@ scripts: scripts_basic include/config/auto.conf include/config/tristate.conf
 	$(Q)$(MAKE) $(build)=$(@)
 
 # Objects we will link into vmlinux / subdirs we need to visit
-core-y		:= core/ FreeRTOS/ src/
+core-y		:= core/ FreeRTOS/
 endif # KBUILD_EXTMOD
 
 ifeq ($(dot-config),1)
@@ -289,6 +322,7 @@ ifeq ($(KBUILD_EXTMOD),)
 # Read in dependencies to all Kconfig* files, make sure to run
 # oldconfig if changes are detected.
 -include include/config/auto.conf.cmd
+include port/$(MCPU)/Makefile
 
 # To avoid any implicit rule to kick in, define an empty command
 $(KCONFIG_CONFIG) include/config/auto.conf.cmd: ;
@@ -323,15 +357,16 @@ endif # $(dot-config)
 
 ifeq ($(KBUILD_EXTMOD),)
 
+
 jammci-dirs    := $(patsubst %/,%,$(filter %/, $(core-y) $(core-m)))
 
-jammci-alldirs := $(sort $(vmlinux-dirs) $(patsubst %/,%,$(filter %/, \
+jammci-alldirs := $(sort $(jammci-dirs) $(patsubst %/,%,$(filter %/, \
 			$(core-))))
 
 core-y          := $(patsubst %/, %/built-in.o, $(core-y))
 
 export KBUILD_JAMMCI_CORE := $(core-y)
-export KBUILD_LDS          := linker/afc.lds
+export KBUILD_LDS          := linker/$(MCU)_app.lds
 
 jammci-deps := $(KBUILD_LDS) $(KBUILD_JAMMCI_CORE)
 
@@ -351,13 +386,8 @@ $(sort $(jammci-deps)): $(jammci-dirs);
 NOSTDINC_FLAGS += -isystem $(shell $(CC) -print-file-name=include)
 CHECKFLAGS     += $(NOSTDINC_FLAGS)
 
-ifdef CONFIG_FREERTOS
-
-CC_USE_FREERTOS := $(call cc-option, -DUSE_FREERTOS=1)
-
-endif
-
-CC_JAMMCI_FLAGS := $(call cc-option, -DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCR_INTEGER_PRINTF -D__LPC17XX__ -D__REDLIB__)
+#CC_JAMMCI_FLAGS := $(call cc-option, -DCR_INTEGER_PRINTF) 
+#CC_JAMMCI_FLAGS += $(call cc-option, -D__USE_LPCOPEN)
 
 #-DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCR_INTEGER_PRINTF -D__LPC17XX__ -D__REDLIB__ -DUSE_FREERTOS=1 -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\src\board\inc" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\src\chip\inc" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\src" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\FreeRTOS\include" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\FreeRTOS\portable\GCC\ARM_CM3" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__REDLIB__ -specs=redlib.specs
 

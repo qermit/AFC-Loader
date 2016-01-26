@@ -44,7 +44,8 @@ Module.symvers
 /tags
 /TAGS
 /linux
-/vmlinux
+/jammci
+/jammci.map
 /vmlinux.32
 /vmlinux-gdb.py
 /vmlinuz

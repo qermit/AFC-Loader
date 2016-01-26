@@ -71,12 +71,8 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
-#ifndef USE_FREERTOS
+#ifndef CONFIG_FREERTOS
 #error This project version is not compatible with FreeRTOS, Check variables
-#else
-#if USE_FREERTOS == 0
-#error This project version is not compatible with FreeRTOS, Check variables
-#endif
 #endif
 
 #include "board.h"

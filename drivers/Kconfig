@@ -13,25 +13,41 @@ config DRIVER_HAL_SPI
 config DRIVER_HAL_GPIO
 	def_bool n
 
-if ARCH_AVRXMEGA
+## specific drivers
+## AVRXMEGA
 
 config DRIVER_AVRXMEGA_GPIO
 	bool "AVR xmega gpio driver"
-	select DIVER_HAL_GPIO
-
-endif
-
-if MCU_LPC1764
-
-config DRIVER_LPC1764_GPIO
-	bool "LPC1764 gpio driver"
+	depends on ARCH_AVRXMEGA
 	select DRIVER_HAL_GPIO
 
-config DRIVER_LPC1764_I2C
-	bool "LPC1764 gpio driver"
+config DRIVER_AVRXMEGA_I2C
+	bool "AVR xmega I2C driver"
+	depends on ARCH_AVRXMEGA
 	select DRIVER_HAL_I2C
 
-endif
+config DRIVER_AVRXMEGA_SPI
+	bool "AVR xmega SPI driver"
+	depends on ARCH_AVRXMEGA
+	select DRIVER_HAL_SPI
+
+## specific drivers
+## LPC176X
+
+config DRIVER_LPC176X_GPIO
+	bool "LPC176X gpio driver"
+	depends on MCU_LPC176X
+	select DRIVER_HAL_GPIO
+
+config DRIVER_LPC176X_I2C
+	bool "LPC176X i2c driver"
+	depends on MCU_LPC176X
+	select DRIVER_HAL_I2C
+
+config DRIVER_LPC176X_SPI
+	bool "LPC176X spi driver"
+	depends on MCU_LPC176X
+	select DRIVER_HAL_SPI
 
 comment "I2C chips"
 

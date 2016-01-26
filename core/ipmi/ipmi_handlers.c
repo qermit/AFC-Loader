@@ -155,8 +155,10 @@ IPMI_HANDLER(ipmi_storage_get_fru_info, NETFN_STORAGE, IPMI_GET_FRU_INVENTORY_AR
 
 		rsp->msg_data[len++] = 0; // device accessed by bytes
 	} else {
-		return IPMI_CC_INV_CMD;
+		rsp->retcode = IPMI_CC_INV_CMD;
+		return;
 	}
+
 	rsp->msg.data_len = len;
     rsp->retcode = IPMI_CC_OK;
 }

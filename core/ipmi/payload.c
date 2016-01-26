@@ -19,7 +19,7 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if USE_FREERTOS == 1
+#ifdef CONFIG_FREERTOS
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
