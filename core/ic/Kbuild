@@ -1,1 +1,3 @@
-obj-y := ic_ADN4604.o
+
+obj-y :=
+obj-$(CONFIG_CHIP_I2C_ADN4604) += ic_ADN4604.o

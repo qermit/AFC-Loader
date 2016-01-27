@@ -100,33 +100,7 @@ SUBARCH		= $(CONFIG_ARCH)
 
 ARCH            ?= $(SUBARCH)
 
-
-#ifeq ($(CROSS_COMPILE),) 
-#CROSS_COMPILE := echo chuj
-#ifeq ($(CONFIG_CROSS_COMPILE_CUSTOM),1)
-#CROSS_COMPILE = echo dupa
-#endif
-#endif
-CROSS_COMPILE ?= $(CONFIG_CROSS_COMPILE_FIXED:"%"=%)$(CONFIG_CROSS_COMPILE:"%"=%)
-#CROSS_COMPILE_F ?= $(CROSS_COMPILE)
-#ifeq ($(CROSS_COMPILE_F),)
-#CROSS_COMPILE_F = $(CONFIG_CROSS_COMPILE)
-#endif
-#ifeq ($(CROSS_COMPILE_F),)
-#CROSS_COMPILE_F = $(CONFIG_CROSS_COMPILE_FIXED)
-#endif
-#ifeq ($(CONFIG_CROSS_COMPILE_FIXED),)
-#CROSS_COMPILE_F   ?= $(CONFIG_CROSS_COMPILE:"%"=%)
-#else
-#CROSS_COMPILE_F	?= $(CONFIG_CROSS_COMPILE_FIXED:"%"=%)
-#endif
-
-#CROSS_COMPILE = $(CROSS_COMPILE_F)
-
-
-#else
-#CROSS_COMPILE   ?= $(CONFIG_CROSS_COMPILE:"%"=%)
-#endif
+CROSS_COMPILE   ?= $(CONFIG_CROSS_COMPILE_FIXED:"%"=%)$(CONFIG_CROSS_COMPILE:"%"=%)
 CONFIG_ARCH	?=
 MCU		?= $(CONFIG_MCU:"%"=%)
 MCPU		?= $(CONFIG_CPU:"%"=%)
@@ -185,7 +159,8 @@ LINUXINCLUDE := \
 
 
 
-KBUILD_CFLAGS = -mcpu=$(MCPU) -mthumb
+#KBUILD_CFLAGS = -mcpu=$(MCPU) -mthumb
+KBUILD_CFLAGS = 
 #LDFLAGS_jammci += --gc-sections -lgcc -lc -lm
 
 export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
@@ -391,7 +366,7 @@ CHECKFLAGS     += $(NOSTDINC_FLAGS)
 
 #-DDEBUG -D__CODE_RED -DCORE_M3 -D__USE_LPCOPEN -DCR_INTEGER_PRINTF -D__LPC17XX__ -D__REDLIB__ -DUSE_FREERTOS=1 -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\src\board\inc" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\src\chip\inc" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\src" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\FreeRTOS\include" -I"D:\Devel\projekty\uTCA\afc_afck\bootloader_lpcxpresso_1769\FreeRTOS\portable\GCC\ARM_CM3" -O0 -g3 -Wall -c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -mcpu=cortex-m3 -mthumb -D__REDLIB__ -specs=redlib.specs
 
-KBUILD_CFLAGS += $(CC_USE_FREERTOS) $(CC_JAMMCI_FLAGS)
+#KBUILD_CFLAGS += $(CC_USE_FREERTOS) $(CC_JAMMCI_FLAGS)
 
 prepare:
 
@@ -419,6 +394,12 @@ clean: $(clean-dirs)
 		-o -name '*.symtypes' -o -name 'modules.order' \
 		-o -name modules.builtin -o -name '.tmp_*.o.*' \
 		-o -name '*.gcno' \) -type f -print | xargs rm -f
+
+boards := $(wildcard $(srctree)/configs/*_defconfig)
+boards := $(notdir $(boards))
+
+
+
 
 endif #ifeq ($(config-targets),1)
 endif #ifeq ($(mixed-targets),1)

@@ -16,7 +16,7 @@ config MCU_LPC1764
 
 config MCU_ATXMEGA128A1U
 	bool "ATxmega 128A1U"
-	select MCU_AVRXMEGA
+	select CPU_AVRXMEGA7
 
 endchoice
 
@@ -25,10 +25,19 @@ config MCU_LPC176X
 	def_bool n
 	select CPU_CORTEX_M3
 
-config MCU_ATXMEGA
+config CPU_AVRXMEGA7
 	def_bool n
-	select CPU_AVRXMEGA
+	select ARCH_AVR
 
+config CPU_CORTEX_M3
+	def_bool n
+	select ARCH_ARMV7_M
+
+config ARCH_ARMV7_M
+	def_bool n
+
+config ARCH_AVR
+	def_bool n
 
 choice 
 	prompt "Cross-compiler"
@@ -36,10 +45,10 @@ choice
 
 config CROSS_COMPILE_ARM
 	depends on CPU_CORTEX_M3
-	bool "ARM"
+	bool "ARM None EABI"
 
 config CROSS_COMPILE_AVR
-	depends on CPU_AVRXMEGA
+	depends on ARCH_AVR
 	bool "AVR"
 
 config CROSS_COMPILE_CUSTOM
@@ -52,10 +61,10 @@ config CROSS_COMPILE
 	depends on CROSS_COMPILE_CUSTOM
 
 config CROSS_COMPILE_FIXED
-	string
-	default "" if CROSS_COMPILE_CUSTOM
+	string 
+	depends on !CROSS_COMPILE_CUSTOM
 	default "arm-none-eabi-" if CROSS_COMPILE_ARM
-	default "avr-none-eabi-" if CROSS_COMPILE_AVR
+	default "avr-" if CROSS_COMPILE_AVR
 
 
 
@@ -292,12 +301,6 @@ endif
 endmenu
 
 
-config CPU_CORTEX_M3
-	def_bool n
-	select ARCH_ARMV7_M
-
-config ARCH_ARMV7_M
-	def_bool n
 
 
 config ARCH
@@ -308,7 +311,7 @@ config ARCH
 config CPU
 	string
 	default "cortex-m3" if CPU_CORTEX_M3
-	default "atxmega" if ARCH_ATXMEGA
+	default "atxmega" if CPU_AVRXMEGA7
 
 config MCU
 	string
@@ -346,3 +349,40 @@ menu "Project"
 source project/Kconfig
 
 endmenu
+
+config BOOTLOADER
+	bool "Bootloader support"
+
+choice
+	prompt "Firmware update"
+	default FW_UPDATE_NONE
+
+config FW_UPDATE_NONE
+	bool "No firmware update support"
+
+config FW_UPDATE_INPLACE
+	bool "in chip update"
+	depends on BOOTLOADER
+	---help---
+	Generate one image.
+	Firmware will be uploaded to second half of chip flash.
+	Bootloader will copy firmware to lower half during startup.
+
+config FW_UPDATE_INPLACE_DUAL
+	bool "in chip update dual"
+	depends on BOOTLOADER
+	---help---
+	Generate two images primary and secondary.
+	New firmware will be uploaded to another half of mcu flash.
+	Allows to have two versions of firmware.
+
+config FW_UPDATE_SPI
+	bool "SPI update"
+	depends on (BOOTLOADER && DRIVER_HAL_SPI)
+	---help---
+	New firmware will be updated to external SPI flash.
+	During boot time it will be burned into mcu flash.
+	Allows to have multiple versions of firmware
+
+endchoice
+	

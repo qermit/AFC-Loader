@@ -13,22 +13,25 @@ config DRIVER_HAL_SPI
 config DRIVER_HAL_GPIO
 	def_bool n
 
+config DRIVER_HAL_UART
+	def_bool n
+
 ## specific drivers
 ## AVRXMEGA
 
 config DRIVER_AVRXMEGA_GPIO
 	bool "AVR xmega gpio driver"
-	depends on ARCH_AVRXMEGA
+	depends on MCU_AVRXMEGA
 	select DRIVER_HAL_GPIO
 
 config DRIVER_AVRXMEGA_I2C
 	bool "AVR xmega I2C driver"
-	depends on ARCH_AVRXMEGA
+	depends on MCU_AVRXMEGA
 	select DRIVER_HAL_I2C
 
 config DRIVER_AVRXMEGA_SPI
 	bool "AVR xmega SPI driver"
-	depends on ARCH_AVRXMEGA
+	depends on MCU_AVRXMEGA
 	select DRIVER_HAL_SPI
 
 ## specific drivers
@@ -49,22 +52,95 @@ config DRIVER_LPC176X_SPI
 	depends on MCU_LPC176X
 	select DRIVER_HAL_SPI
 
-comment "I2C chips"
+config DRIVER_LPC176X_UART
+	bool "LPC176X uart driver"
+	depends on MCU_LPC176X
+	select DRIVER_HAL_UART
 
-config DRIVER_I2C_MUX
+
+config CHIP_I2C
+	bool "I2C chips" if EXPERT
+	default y if DRIVER_HAL_I2C
+	default n if !DRIVER_HAL_I2C
+
+config CHIP_I2C_MUX
 	bool "I2C MUX"
-	depends on DRIVER_HAL_I2C
+	depends on CHIP_I2C
 
-config DRIVER_I2C_MCP79410
+config CHIP_I2C_MCP79410
 	bool "MCP79410 i2c RTCC"
-	depends on DRIVER_HAL_I2C
+	depends on CHIP_I2C
 
 #submenu
 
-config DRIVER_I2C_MCP79410_BOARDDETECT
+config CHIP_I2C_MCP79410_BOARDDETECT
 	bool "MCP79410 based board type detection"
-	depends on DRIVER_I2C_MCP79410
+	depends on CHIP_I2C_MCP79410
 	select DRIVER_HAL_BOARDAUTODETECT
+
+config CHIP_I2C_EEPROM
+	bool "I2C Serial EEPROM"
+	depends on CHIP_I2C
+
+config CHIP_I2C_AT24
+	bool "I2C AT24 mac"
+	depends on CHIP_I2C
+
+config CHIP_I2C_MAX6642
+	bool "MAX6642 temperature sensor"
+	depends on CHIP_I2C
+
+config CHIP_I2C_LM75
+	bool "LM75 temperature sensor"
+	depends on CHIP_I2C
+
+config CHIP_I2C_ADN4604
+	bool "ADN4604 crossbar"
+	depends on CHIP_I2C
+
+config CHIP_I2C_SI57X
+	bool "SI57X oscilator"
+	depends on CHIP_I2C
+
+
+config CHIP_I2C_INA220
+	bool "INA220 current/power monitor"
+	depends on CHIP_I2C
+
+
+config DCHIP_I2C_TMP432A
+	bool "TMP432A temperature sensor"
+	depends on CHIP_I2C
+
+config CHIP_I2C_WISHBONE
+	bool "I2C wishbone driver"
+	depends on CHIP_I2C
+
+config CHIP_SPI
+	bool "SPI Chips" if EXPERT
+	default y if DRIVER_HAL_SPI
+	default n if !DRIVER_HAL_SPI
+
+config CHIP_SPI_FLASH
+	bool "SPI flash" 
+	depends on CHIP_SPI
+
+config CHIP_SPI_AD8402
+	bool "AD8402 DAC"
+	depends on CHIP_SPI
+
+config CHIP_SPI_WISHBONE
+	bool "SPI wishbone driver"
+	depends on CHIP_SPI
+
+
+config WISHBONE
+	bool "Wishbone bus"
+	depends on (CHIP_SPI_WISHBONE || CHIP_I2C_WISHBONE)
+
+config WISHBONE_SDB
+	bool "Wishbone self describing bus"
+	depends on WISHBONE
 
 #endsubmenu
 
