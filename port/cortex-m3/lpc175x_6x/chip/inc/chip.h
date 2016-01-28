@@ -32,7 +32,7 @@
 #ifndef __CHIP_H_
 #define __CHIP_H_
 
-#include "lpc_types.h"
+#include "chip_types.h"
 #include "sys_config.h"
 #include "cmsis.h"
 

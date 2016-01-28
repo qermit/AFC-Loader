@@ -1,2 +1,2 @@
 
-obj-y := MemMang/ GCC/
+obj-y := MemMang/

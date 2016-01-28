@@ -1,0 +1,4 @@
+
+obj-y :=
+obj-$(CONFIG_MCU_LPC176X) += lpc175x_6x/
+

@@ -148,12 +148,10 @@ CFLAGS_GCOV     = -fprofile-arcs -ftest-coverage
 LINUXINCLUDE := \
 	$(if $(KBUILD_SRC), -I$(srctree)/include) \
 	-I$(srctree)/include \
+	-I$(srctree)/include/board \
 	-I$(srctree)/include/FreeRTOS \
 	-I$(srctree)/core \
-	-I$(srctree)/core/board/inc \
-	-I$(srctree)/core/chip/inc \
 	-I$(srctree)/FreeRTOS/include \
-	-I$(srctree)/FreeRTOS/portable/GCC/ARM_CM3 \
 	-include $(srctree)/include/kconfig.h
 
 
@@ -287,6 +285,8 @@ scripts: scripts_basic include/config/auto.conf include/config/tristate.conf
 
 # Objects we will link into vmlinux / subdirs we need to visit
 core-y		:= core/ FreeRTOS/
+
+port-y		:= 
 endif # KBUILD_EXTMOD
 
 ifeq ($(dot-config),1)
@@ -333,14 +333,15 @@ endif # $(dot-config)
 ifeq ($(KBUILD_EXTMOD),)
 
 
-jammci-dirs    := $(patsubst %/,%,$(filter %/, $(core-y) $(core-m)))
+jammci-dirs    := $(patsubst %/,%,$(filter %/, $(port-y) $(port-m) $(core-y) $(core-m)))
 
 jammci-alldirs := $(sort $(jammci-dirs) $(patsubst %/,%,$(filter %/, \
-			$(core-))))
+			$(core-) $(port-))))
 
 core-y          := $(patsubst %/, %/built-in.o, $(core-y))
+port-y          := $(patsubst %/, %/built-in.o, $(port-y))
 
-export KBUILD_JAMMCI_CORE := $(core-y)
+export KBUILD_JAMMCI_CORE := $(port-y) $(core-y) 
 export KBUILD_LDS          := linker/$(MCU)_app.lds
 
 jammci-deps := $(KBUILD_LDS) $(KBUILD_JAMMCI_CORE)

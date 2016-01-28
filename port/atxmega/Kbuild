@@ -1,0 +1,2 @@
+
+obj-y := bootloader_atxmega128a1u.o
