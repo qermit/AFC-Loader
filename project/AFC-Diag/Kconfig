@@ -1,0 +1,11 @@
+#
+# Network configuration
+#
+
+config P_AFC_DIAG
+	bool "AFC diagnostiscs"
+	---help---
+	  This project reads and writes diagnostic messages to FPGA
+	  It is compatible with https://github.com/lnls-dig/bpm-gw
+	  
+

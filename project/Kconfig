@@ -1,2 +1,3 @@
 source project/TMS-Master/Kconfig
 source project/TMS-Slave/Kconfig
+source project/AFC-Diag/Kconfig
